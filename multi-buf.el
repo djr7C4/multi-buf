@@ -384,12 +384,22 @@ any backend."
   ;; themselves.
   (or (buffer-base-buffer buf) buf))
 
-(cl-defmethod multi-buf-cleanup ((backend multi-buf-indirect-backend) _buf)
+(cl-defmethod multi-buf-cleanup ((backend multi-buf-indirect-backend) buf)
   (cl-call-next-method)
   ;; When only the base buffer is left, remove it. It is no longer considered a
   ;; base buffer when all its indirect buffers are gone.
-  (when (= (length (oref backend buffers)) 1)
-    (oset backend buffers nil)))
+  (letrec ((base-buf (or (buffer-base-buffer buf) buf))
+           (base-or-indirect-p (lambda (b)
+                                 (or (eq b base-buf)
+                                     (eq (buffer-base-buffer b) base-buf)))))
+    (when (= (cl-count-if base-or-indirect-p
+                          (oref backend buffers))
+             1)
+      (with-current-buffer base-buf
+        (kill-local-variable 'multi-buf-backend-instance))
+      (oset backend
+            buffers
+            (cl-remove-if base-or-indirect-p (oref backend buffers))))))
 
 (defun multi-buf-indirect-dwim (&optional arg)
   "Cycle to, switch to or create a new indirect buffer.
