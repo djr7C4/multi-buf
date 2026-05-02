@@ -280,9 +280,9 @@ If no prefix argument ARG is provided then cycle forward to the
 next vterm buffer. If the prefix argument is an integer, then
 perform cycling according to its numeric value. If no vterm
 buffer exists other than the current buffer, create a new one.
-With a universal prefix arguments, always create a new vterm.
-With two universal prefix arguments, switch to a vterm in the
-same directory using completion. With three universal prefix
+With a universal prefix argument, always create a new vterm. With
+two universal prefix arguments, switch to a vterm in the same
+directory using completion. With three universal prefix
 arguments, switch to any vterm using completion. With a negative
 universal prefix argument, switch to a buffer for any backend."
   (interactive "P")
@@ -314,13 +314,15 @@ universal prefix argument, switch to a buffer for any backend."
   "Cycle to, switch to or create a new `gptel' buffer.
 
 If no prefix argument ARG is provided then cycle forward to the
-next gptel buffer. If the prefix argument is an integer, then
-perform cycling according to its numeric value. If no gptel
-buffer exists other than the current buffer, create a new one.
-With a universal prefix argument, always create a new gptel
-buffer. With three universal prefix arguments, switch to any
-gptel buffer using completion. With a negative universal prefix
-argument, switch to a buffer for any backend."
+next gptel buffer for the current project. If the prefix argument
+is an integer, then perform cycling according to its numeric
+value. If no gptel buffer for the current project exists other
+than the current buffer, create a new one. With a universal
+prefix argument, always create a new gptel buffer. With two
+universal prefix arguments, switch to a gptel buffer in the same
+project using completion. With three universal prefix arguments,
+switch to any gptel buffer using completion. With a negative
+universal prefix argument, switch to a buffer for any backend."
   (interactive "P")
   (multi-buf-dwim multi-buf-gptel-backend-instance arg))
 
@@ -360,10 +362,10 @@ numeric value. If no gptel-agent buffer for the current project
 exists other than the current buffer, create a new one. With a
 universal prefix argument, always create a new gptel-agent
 buffer. With two universal prefix arguments, switch to a
-gptel-agent buffer using completion. With three universal prefix
-arguments, switch to any gptel-agent buffer using completion.
-With a negative universal prefix argument, switch to a buffer for
-any backend."
+gptel-agent buffer in the same project using completion. With
+three universal prefix arguments, switch to any gptel-agent
+buffer using completion. With a negative universal prefix
+argument, switch to a buffer for any backend."
   (interactive "P")
   (multi-buf-dwim multi-buf-gptel-agent-backend-instance arg))
 
@@ -412,7 +414,7 @@ the current base buffer and its indirect buffers. If the prefix
 argument is an integer, then perform cycling according to its
 numeric value. If no indirect buffer exists, create a new one.
 With a universal prefix argument, always create a new indirect
-buffer. With two universal prefix arguments, switch to a base
+buffer. With two universal prefix arguments, switch to the base
 buffer or an indirect buffer using completion. With three
 universal prefix arguments, switch to any base buffer or indirect
 buffer using completion. With a negative universal prefix
