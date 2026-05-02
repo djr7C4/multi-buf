@@ -408,6 +408,8 @@ universal prefix arguments, switch to any base buffer or indirect
 buffer using completion. With a negative universal prefix
 argument, switch to a buffer for any backend."
   (interactive "P")
+  (when multi-buf-backend-instance
+    (user-error "Indirect buffers are not allowed when another multi-buf backend already exists"))
   (multi-buf-dwim multi-buf-indirect-backend-instance arg))
 
 (provide 'multi-buf)
