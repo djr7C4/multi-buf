@@ -127,13 +127,12 @@ action such as `multi-buf-switch'."))
   (with-current-buffer buf
     (eq backend multi-buf-backend-instance)))
 
-;;; API functions
 (defun multi-buf-all ()
-  (mapcan (lambda (buf)
-            (with-current-buffer buf
-              (when multi-buf-backend-instance
-                (copy-sequence (oref multi-buf-backend-instance buffers)))))
-          (buffer-list)))
+  (cl-remove-if-not (lambda (buf)
+                      (with-current-buffer buf
+                        (and-let* ((backend multi-buf-backend-instance))
+                          (multi-buf-include-in-general-switch-p backend buf))))
+                    (buffer-list)))
 
 (cl-defgeneric multi-buf-filter (backend use-category))
 
