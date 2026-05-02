@@ -220,7 +220,7 @@ category will be considered."
                                        (concat (oref backend name) " ")
                                      ""))
                            nil
-                           nil
+                           t
                            (lambda (b)
                              (memq (or (cdr-safe b) b) bufs)))))
     (multi-buf-pop-to backend buf 'switch)))
