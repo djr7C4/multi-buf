@@ -308,7 +308,7 @@ universal prefix argument, switch to a buffer for any backend."
 ;; `gptel' buffers belong to their project.
 (cl-defmethod multi-buf-category ((_backend multi-buf-gptel-backend) buf)
   (with-current-buffer buf
-    (file-truename (or (project-root (project-current)) default-directory))))
+    (multi-buf-project-root)))
 
 (defun multi-buf-gptel-dwim (&optional arg)
   "Cycle to, switch to or create a new `gptel' buffer.
@@ -340,7 +340,7 @@ argument, switch to a buffer for any backend."
           (setf (symbol-function 'gptel)
                 (lambda (&rest args)
                   (setq buf (apply orig-gptel args))))
-          (gptel-agent (or (project-root (project-current)) default-directory)))
+          (gptel-agent (multi-buf-project-root)))
       (setf (symbol-function 'gptel) orig-gptel))
     (bury-buffer)
     buf))
@@ -348,7 +348,7 @@ argument, switch to a buffer for any backend."
 ;; `gptel-agent' buffers belong to their project.
 (cl-defmethod multi-buf-category ((_backend multi-buf-gptel-agent-backend) buf)
   (with-current-buffer buf
-    (file-truename (or (project-root (project-current)) default-directory))))
+    (multi-buf-project-root)))
 
 (defun multi-buf-gptel-agent-dwim (&optional arg)
   "Cycle to, switch to or create a new `gptel-agent' buffer.
