@@ -17,6 +17,12 @@
 (require 'eieio)
 (require 'project)
 
+;;; Utilities
+(defun multi-buf-project-root ()
+  (file-truename (or (and-let* ((proj (project-current))) (project-root proj))
+                     default-directory)))
+
+;;; Low-level library
 ;; This variable shouldn't have the same name as the `multi-buf-backend' class
 ;; because `defclass' defines a variable with the same name as the class.
 (defvar-local multi-buf-backend-instance nil)
@@ -26,7 +32,6 @@
    (name :initarg :name :initform (error "Name is required"))
    (include-in-general-switch-p :initarg :include-in-general-switch-p :initform t)))
 
-;;; Generic functions that should be defined for new backends.
 (cl-defgeneric multi-buf-new (backend)
   (:documentation
    "Create a new buffer for BACKEND.
