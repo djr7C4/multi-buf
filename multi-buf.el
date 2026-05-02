@@ -299,9 +299,8 @@ universal prefix argument, switch to a buffer for any backend."
   (let ((name (generate-new-buffer-name "*gptel*")))
     (gptel name
            nil
-           (and (use-region-p)
-                (buffer-substring (region-beginning)
-                                  (region-end)))
+           ;; Support the `gptel' feature for inserting regions into the buffer.
+           (and (use-region-p) (buffer-substring (region-beginning) (region-end)))
            t)
     (bury-buffer)
     (get-buffer name)))
