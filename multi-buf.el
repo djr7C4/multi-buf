@@ -53,7 +53,8 @@ switch to the new buffer. It should only create it."))
 (defun multi-buf-register (backend buf)
   (with-current-buffer buf
     (unless multi-buf-backend-instance
-      (cl-pushnew buf (oref backend buffers))
+      ;; Add new buffers at the end to preserve the order.
+      (oset backend buffers (append (oref backend buffers) (list buf)))
       (setq-local multi-buf-backend-instance backend)
       (add-hook 'kill-buffer-hook #'multi-buf-cleanup-wrapper nil t))))
 
