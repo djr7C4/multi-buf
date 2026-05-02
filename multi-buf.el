@@ -143,11 +143,11 @@ action such as `multi-buf-switch'."))
 
 (cl-defmethod multi-buf-filter ((backend multi-buf-backend) use-category)
   (let ((category (multi-buf-category backend (current-buffer))))
-    (cl-remove-if (lambda (buf)
-                    (not (and (multi-buf-match-p backend buf)
-                              (or (not use-category)
-                                  (equal category (multi-buf-category backend buf))))))
-                  (oref backend buffers))))
+    (cl-remove-if-not (lambda (buf)
+                        (and (multi-buf-match-p backend buf)
+                             (or (not use-category)
+                                 (equal category (multi-buf-category backend buf)))))
+                      (oref backend buffers))))
 
 (cl-defgeneric multi-buf-pop-to (backend buf action-type))
 
