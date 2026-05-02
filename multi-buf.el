@@ -378,7 +378,8 @@ argument, switch to a buffer for any backend."
 
 (cl-defmethod multi-buf-new ((backend multi-buf-indirect-backend))
   (let ((buf (or (buffer-base-buffer) (current-buffer))))
-    (cl-pushnew buf (oref backend buffers))
+    ;; Include the base buffer.
+    (multi-buf-register backend buf)
     (make-indirect-buffer buf (generate-new-buffer-name (buffer-name buf)))))
 
 (cl-defmethod multi-buf-category ((_backend multi-buf-indirect-backend) buf)
