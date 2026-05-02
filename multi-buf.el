@@ -149,6 +149,12 @@ action such as `multi-buf-switch'."))
 
 (cl-defgeneric multi-buf-pop-to (backend buf action-type))
 
+(cl-defmethod multi-buf-pop-to ((_backend (eql nil)) buf action-type)
+  (with-current-buffer buf
+    (if-let* ((backend multi-buf-backend-instance))
+        (multi-buf-pop-to backend buf action-type)
+      (error "No backend found for %S" buf))))
+
 (cl-defmethod multi-buf-pop-to ((backend multi-buf-backend) buf action-type)
   (pop-to-buffer buf (multi-buf-display-buffer-action-type backend buf action-type)))
 
@@ -215,13 +221,7 @@ category will be considered."
                            nil
                            (lambda (b)
                              (memq (or (cdr-safe b) b) bufs)))))
-    (multi-buf-pop-to (or backend
-                          ;; With a nil backend, use the backend for the buffer
-                          ;; we are switching to.
-                          (with-current-buffer buf
-                            multi-buf-backend-instance))
-                      buf
-                      'switch)))
+    (multi-buf-pop-to backend buf 'switch)))
 
 (defun multi-buf-dwim (backend arg)
   "Cycle to, switch to or create a buffer for BACKEND.
