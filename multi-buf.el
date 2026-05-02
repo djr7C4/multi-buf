@@ -83,10 +83,8 @@ while `switch' indicates a buffer switching action such as
 (cl-defmethod multi-buf-use-category-default ((_backend (eql nil)) _action-type)
   nil)
 
-(cl-defmethod multi-buf-use-category-default ((_backend multi-buf-backend) action-type)
-  (cl-ecase action-type
-    (cycle t)
-    (switch nil)))
+(cl-defmethod multi-buf-use-category-default ((_backend multi-buf-backend) _action-type)
+  t)
 
 (cl-defgeneric multi-buf-include-in-general-switch-p (backend buf)
   (:documentation
