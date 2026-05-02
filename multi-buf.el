@@ -50,12 +50,16 @@ switch to the new buffer. It should only create it."))
   (when-let* ((backend multi-buf-backend-instance))
     (multi-buf-cleanup backend (current-buffer))))
 
+(defun multi-buf-register (backend buf)
+  (with-current-buffer buf
+    (unless multi-buf-backend-instance
+      (cl-pushnew buf (oref backend buffers))
+      (setq-local multi-buf-backend-instance backend)
+      (add-hook 'kill-buffer-hook #'multi-buf-cleanup-wrapper nil t))))
+
 (cl-defmethod multi-buf-new :around ((backend multi-buf-backend))
   (let ((buf (cl-call-next-method)))
-    (push buf (oref backend buffers))
-    (with-current-buffer buf
-      (setq-local multi-buf-backend-instance backend)
-      (add-hook 'kill-buffer-hook #'multi-buf-cleanup nil t))
+    (multi-buf-register backend buf)
     buf))
 
 (cl-defgeneric multi-buf-category (backend buf)
