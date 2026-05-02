@@ -125,7 +125,7 @@ action such as `multi-buf-switch'."))
 
 (cl-defmethod multi-buf-match-p ((backend multi-buf-backend) buf)
   (with-current-buffer buf
-    (eq (type-of backend) (type-of multi-buf-backend-instance))))
+    (eq backend multi-buf-backend-instance)))
 
 ;;; API functions
 (defun multi-buf-all ()
