@@ -382,6 +382,14 @@ argument, switch to a buffer for any backend."
     (multi-buf-register backend buf)
     (make-indirect-buffer buf (generate-new-buffer-name (buffer-name buf)))))
 
+(cl-defmethod multi-buf-new :around ((backend multi-buf-indirect-backend))
+  ;; Prevent the user from creating multi-buf-managed indirect buffers from
+  ;; buffers with another backend.
+  (if (and multi-buf-backend-instance
+           (not (multi-buf-match-p backend (current-buffer))))
+      (user-error "Cannot create an indirect buffer for a buffer with another backend")
+    (cl-call-next-method)))
+
 (cl-defmethod multi-buf-category ((_backend multi-buf-indirect-backend) buf)
   ;; Indirect buffers belong to their base buffer. Base buffers belong to
   ;; themselves.
@@ -421,8 +429,6 @@ universal prefix arguments, switch to any base buffer or indirect
 buffer using completion. With a negative universal prefix
 argument, switch to a buffer for any backend."
   (interactive "P")
-  (when multi-buf-backend-instance
-    (user-error "Indirect buffers are not allowed when another multi-buf backend already exists"))
   (multi-buf-dwim multi-buf-indirect-backend-instance arg))
 
 (provide 'multi-buf)
