@@ -240,7 +240,7 @@ completion with the default value of `:use-category' negated.
 With a negative universal prefix argument, switch to a buffer for
 any backend."
   (cond
-   ((or (null arg) (integerp arg))
+   ((or (null arg) (eq arg '-) (integerp arg))
     (or (multi-buf-next backend :offset (prefix-numeric-value arg))
         ;; If there is no buffer to switch to other than the current one, create
         ;; a new buffer.
