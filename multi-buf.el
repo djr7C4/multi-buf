@@ -162,6 +162,13 @@ action such as `multi-buf-switch'."))
   (pop-to-buffer buf (multi-buf-display-buffer-action-type backend buf action-type)))
 
 ;;; Commands
+(defun multi-buf-create (backend)
+  "Create a new buffer for BACKEND.
+
+This is a convenience function for implementating multi-buf-new-*
+commands for specific backends."
+  (multi-buf-pop-to backend (multi-buf-new backend) 'new))
+
 (cl-defun multi-buf-next (backend &key (offset 1) (use-category (multi-buf-use-category-default backend 'cycle)))
   "Switch to the next buffer for BACKEND.
 
@@ -274,6 +281,11 @@ any backend."
   (with-current-buffer buf
     default-directory))
 
+(defun multi-buf-new-vterm ()
+  "Create a `vterm' buffer."
+  (interactive)
+  (multi-buf-create multi-buf-vterm-backend-instance))
+
 (defun multi-buf-vterm-dwim (&optional arg)
   "Cycle to, switch to or create a new `vterm'.
 
@@ -310,6 +322,11 @@ universal prefix argument, switch to a buffer for any backend."
 (cl-defmethod multi-buf-category ((_backend multi-buf-gptel-backend) buf)
   (with-current-buffer buf
     (multi-buf-project-root)))
+
+(defun multi-buf-new-gptel ()
+  "Create a `gptel' buffer."
+  (interactive)
+  (multi-buf-create multi-buf-gptel-backend-instance))
 
 (defun multi-buf-gptel-dwim (&optional arg)
   "Cycle to, switch to or create a new `gptel' buffer.
@@ -352,6 +369,11 @@ universal prefix argument, switch to a buffer for any backend."
 (cl-defmethod multi-buf-category ((_backend multi-buf-gptel-agent-backend) buf)
   (with-current-buffer buf
     (multi-buf-project-root)))
+
+(defun multi-buf-new-gptel-agent ()
+  "Create a `gptel-agent' buffer."
+  (interactive)
+  (multi-buf-create multi-buf-gptel-agent-backend-instance))
 
 (defun multi-buf-gptel-agent-dwim (&optional arg)
   "Cycle to, switch to or create a new `gptel-agent' buffer.
@@ -412,6 +434,11 @@ argument, switch to a buffer for any backend."
       (oset backend
             buffers
             (cl-remove-if base-or-indirect-p (oref backend buffers))))))
+
+(defun multi-buf-new-indirect ()
+  "Create an indirect buffer."
+  (interactive)
+  (multi-buf-create multi-buf-indirect-backend-instance))
 
 (defun multi-buf-indirect-dwim (&optional arg)
   "Cycle to, switch to or create a new indirect buffer.
