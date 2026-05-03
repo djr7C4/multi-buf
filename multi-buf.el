@@ -432,6 +432,23 @@ argument, switch to a buffer for any backend."
   (multi-buf-indirect-backend :name "indirect"
                               :include-in-general-switch-p nil))
 
+(cl-defmethod multi-buf-cleanup ((backend multi-buf-indirect-backend) buf)
+  (cl-call-next-method)
+  ;; When only the base buffer is left, remove it. It is no longer considered a
+  ;; base buffer when all its indirect buffers are gone.
+  (let* ((base-buf (or (buffer-base-buffer buf) buf))
+         (base-or-indirect-p (lambda (b)
+                               (or (eq b base-buf)
+                                   (eq (buffer-base-buffer b) base-buf)))))
+    (when (= (cl-count-if base-or-indirect-p
+                          (oref backend buffers))
+             1)
+      (with-current-buffer base-buf
+        (kill-local-variable 'multi-buf-backend-instance))
+      (oset backend
+            buffers
+            (cl-remove-if base-or-indirect-p (oref backend buffers))))))
+
 (cl-defmethod multi-buf-new ((backend multi-buf-indirect-backend))
   (let ((buf (or (buffer-base-buffer) (current-buffer))))
     ;; Include the base buffer.
@@ -451,22 +468,6 @@ argument, switch to a buffer for any backend."
   ;; themselves.
   (or (buffer-base-buffer buf) buf))
 
-(cl-defmethod multi-buf-cleanup ((backend multi-buf-indirect-backend) buf)
-  (cl-call-next-method)
-  ;; When only the base buffer is left, remove it. It is no longer considered a
-  ;; base buffer when all its indirect buffers are gone.
-  (letrec ((base-buf (or (buffer-base-buffer buf) buf))
-           (base-or-indirect-p (lambda (b)
-                                 (or (eq b base-buf)
-                                     (eq (buffer-base-buffer b) base-buf)))))
-    (when (= (cl-count-if base-or-indirect-p
-                          (oref backend buffers))
-             1)
-      (with-current-buffer base-buf
-        (kill-local-variable 'multi-buf-backend-instance))
-      (oset backend
-            buffers
-            (cl-remove-if base-or-indirect-p (oref backend buffers))))))
 
 (defun multi-buf-new-indirect ()
   "Create an indirect buffer."
