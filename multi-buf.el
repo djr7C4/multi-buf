@@ -22,6 +22,19 @@
   (file-truename (or (and-let* ((proj (project-current))) (project-root proj))
                      default-directory)))
 
+(defmacro multi-buf-with-displayed-buffer (&rest body)
+  "Return the last buffer BODY attempted to display.
+
+No buffers are displayed within BODY."
+  (declare (indent 0))
+  (with-gensyms (buf remember)
+    `(let* (,buf
+            (,remember (lambda (buffer alist)
+                         (display-buffer-no-window (setq ,buf buffer) alist)))
+            (display-buffer-overriding-action `(,,remember (allow-no-window . t))))
+       ,@body
+       ,buf)))
+
 ;;; Low-level library
 ;; This variable shouldn't have the same name as the `multi-buf-backend' class
 ;; because `defclass' defines a variable with the same name as the class.
@@ -271,10 +284,7 @@ any backend."
 (declare-function eshell "eshell")
 
 (cl-defmethod multi-buf-new ((_backend multi-buf-eshell-backend))
-  (prog2
-      (eshell '-)
-      (current-buffer)
-    (bury-buffer)))
+  (multi-buf-with-displayed-buffer (eshell '-)))
 
 ;; `eshell' buffers belong to their directory.
 (cl-defmethod multi-buf-category ((_backend multi-buf-eshell-backend) buf)
@@ -309,10 +319,7 @@ universal prefix argument, switch to a buffer for any backend."
 (declare-function vterm "vterm")
 
 (cl-defmethod multi-buf-new ((_backend multi-buf-vterm-backend))
-  (prog2
-      (vterm '-)
-      (current-buffer)
-    (bury-buffer)))
+  (multi-buf-with-displayed-buffer (vterm '-)))
 
 ;; `vterm' buffers belong to their directory.
 (cl-defmethod multi-buf-category ((_backend multi-buf-vterm-backend) buf)
@@ -348,13 +355,12 @@ argument, switch to a buffer for any backend."
 
 (cl-defmethod multi-buf-new ((_backend multi-buf-gptel-backend))
   (let ((name (generate-new-buffer-name "*gptel*")))
-    (gptel name
-           nil
-           ;; Support the `gptel' feature for inserting regions into the buffer.
-           (and (use-region-p) (buffer-substring (region-beginning) (region-end)))
-           t)
-    (bury-buffer)
-    (get-buffer name)))
+    (multi-buf-with-displayed-buffer
+      (gptel name
+             nil
+             ;; Support the `gptel' feature for inserting regions into the buffer.
+             (and (use-region-p) (buffer-substring (region-beginning) (region-end)))
+             t))))
 
 ;; `gptel' buffers belong to their project.
 (cl-defmethod multi-buf-category ((_backend multi-buf-gptel-backend) buf)
@@ -390,18 +396,7 @@ universal prefix argument, switch to a buffer for any backend."
 (declare-function gptel-agent "gptel-agent")
 
 (cl-defmethod multi-buf-new ((_backend multi-buf-gptel-agent-backend))
-  ;; `gptel-agent' doesn't provide a nice way to get the buffer so we
-  ;; temporarily rebind the `gptel' function like `noflet' does.
-  (let (buf (orig-gptel (symbol-function 'gptel)))
-    (unwind-protect
-        (progn
-          (setf (symbol-function 'gptel)
-                (lambda (&rest args)
-                  (setq buf (apply orig-gptel args))))
-          (gptel-agent (multi-buf-project-root)))
-      (setf (symbol-function 'gptel) orig-gptel))
-    (bury-buffer)
-    buf))
+  (multi-buf-with-displayed-buffer (gptel-agent (multi-buf-project-root))))
 
 ;; `gptel-agent' buffers belong to their project.
 (cl-defmethod multi-buf-category ((_backend multi-buf-gptel-agent-backend) buf)
