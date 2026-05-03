@@ -290,14 +290,14 @@ any backend."
   "Cycle to, switch to or create a new `vterm'.
 
 If no prefix argument ARG is provided then cycle forward to the
-next vterm buffer. If the prefix argument is an integer, then
-perform cycling according to its numeric value. If no vterm
-buffer exists other than the current buffer, create a new one.
-With a universal prefix argument, always create a new vterm. With
-two universal prefix arguments, switch to a vterm in the same
-directory using completion. With three universal prefix
-arguments, switch to any vterm using completion. With a negative
-universal prefix argument, switch to a buffer for any backend."
+next vterm. If the prefix argument is an integer, then perform
+cycling according to its numeric value. If no vterm exists other
+than the current buffer, create a new one. With a universal
+prefix argument, always create a new vterm. With two universal
+prefix arguments, switch to a vterm in the same directory using
+completion. With three universal prefix arguments, switch to any
+vterm using completion. With a negative universal prefix
+argument, switch to a buffer for any backend."
   (interactive "P")
   (multi-buf-dwim multi-buf-vterm-backend-instance arg))
 
