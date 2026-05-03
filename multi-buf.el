@@ -450,10 +450,10 @@ argument, switch to a buffer for any backend."
             (cl-remove-if base-or-indirect-p (oref backend buffers))))))
 
 (cl-defmethod multi-buf-new ((backend multi-buf-indirect-backend))
-  (let ((buf (or (buffer-base-buffer) (current-buffer))))
+  (let ((base-buf (or (buffer-base-buffer) (current-buffer))))
     ;; Include the base buffer.
-    (multi-buf-register backend buf)
-    (make-indirect-buffer buf (generate-new-buffer-name (buffer-name buf)))))
+    (multi-buf-register backend base-buf)
+    (make-indirect-buffer base-buf (generate-new-buffer-name (buffer-name base-buf)))))
 
 (cl-defmethod multi-buf-new :around ((backend multi-buf-indirect-backend))
   ;; Prevent the user from creating multi-buf-managed indirect buffers from
