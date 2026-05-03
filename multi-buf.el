@@ -263,6 +263,44 @@ any backend."
     (multi-buf-pop-to backend (multi-buf-new backend) 'new))))
 
 ;;; Default backends
+;;; eshell
+(defclass multi-buf-eshell-backend (multi-buf-backend) ())
+
+(defvar multi-buf-eshell-backend-instance (multi-buf-eshell-backend :name "eshell"))
+
+(declare-function eshell "eshell")
+
+(cl-defmethod multi-buf-new ((_backend multi-buf-eshell-backend))
+  (prog2
+      (eshell '-)
+      (current-buffer)
+    (bury-buffer)))
+
+;; `eshell' buffers belong to their directory.
+(cl-defmethod multi-buf-category ((_backend multi-buf-eshell-backend) buf)
+  (with-current-buffer buf
+    default-directory))
+
+(defun multi-buf-new-eshell ()
+  "Create a `eshell' buffer."
+  (interactive)
+  (multi-buf-create multi-buf-eshell-backend-instance))
+
+(defun multi-buf-eshell-dwim (&optional arg)
+  "Cycle to, switch to or create a new `eshell' buffer.
+
+If no prefix argument ARG is provided then cycle forward to the
+next eshell buffer. If the prefix argument is an integer, then
+perform cycling according to its numeric value. If no eshell buffer
+buffer exists other than the current buffer, create a new one.
+With a universal prefix argument, always create a new eshell buffer. With
+two universal prefix arguments, switch to a eshell buffer in the same
+directory using completion. With three universal prefix
+arguments, switch to any eshell buffer using completion. With a negative
+universal prefix argument, switch to a buffer for any backend."
+  (interactive "P")
+  (multi-buf-dwim multi-buf-eshell-backend-instance arg))
+
 ;;; vterm
 (defclass multi-buf-vterm-backend (multi-buf-backend) ())
 
