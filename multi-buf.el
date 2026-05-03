@@ -272,7 +272,7 @@ any backend."
 
 (cl-defmethod multi-buf-new ((_backend multi-buf-vterm-backend))
   (prog2
-      (vterm)
+      (vterm '-)
       (current-buffer)
     (bury-buffer)))
 
