@@ -311,6 +311,87 @@ universal prefix argument, switch to a buffer for any backend."
   (interactive "P")
   (multi-buf-dwim multi-buf-eshell-backend-instance arg))
 
+;;; shell
+(defclass multi-buf-shell-backend (multi-buf-backend) ())
+
+(defvar multi-buf-shell-backend-instance (multi-buf-shell-backend :name "shell"))
+
+(declare-function shell "shell")
+
+(cl-defmethod multi-buf-new ((_backend multi-buf-shell-backend))
+  (multi-buf-with-displayed-buffer (shell (generate-new-buffer-name "*shell*"))))
+
+;; `shell' buffers belong to their directory.
+(cl-defmethod multi-buf-category ((_backend multi-buf-shell-backend) buf)
+  (with-current-buffer buf
+    default-directory))
+
+(defun multi-buf-new-shell ()
+  "Create a `shell' buffer."
+  (interactive)
+  (multi-buf-create multi-buf-shell-backend-instance))
+
+(defun multi-buf-shell-dwim (&optional arg)
+  "Cycle to, switch to or create a new `shell' buffer.
+
+If no prefix argument ARG is provided then cycle forward to the
+next shell buffer. If the prefix argument is an integer, then
+perform cycling according to its numeric value. If no shell
+buffer buffer exists other than the current buffer, create a new
+one. With a universal prefix argument, always create a new shell
+buffer. With two universal prefix arguments, switch to a shell
+buffer in the same directory using completion. With three
+universal prefix arguments, switch to any shell buffer using
+completion. With a negative universal prefix argument, switch to
+a buffer for any backend."
+  (interactive "P")
+  (multi-buf-dwim multi-buf-shell-backend-instance arg))
+
+;;; term
+(defclass multi-buf-term-backend (multi-buf-backend) ())
+
+(defvar multi-buf-term-backend-instance (multi-buf-term-backend :name "term"))
+
+(declare-function term "term")
+
+(cl-defmethod multi-buf-new ((_backend multi-buf-term-backend))
+  ;; `make-term' adds earmuffs to the name so we can't use
+  ;; `generate-new-buffer-name'.
+  (let* ((base-name "terminal")
+         (name base-name)
+         (suffix 1))
+    (while (get-buffer (format "*%s*" name))
+      (setq name (format "%s<%d>" base-name (cl-incf suffix))))
+    (make-term name
+               (or explicit-shell-file-name
+                   (getenv "ESHELL")
+                   shell-file-name))))
+
+;; `term' buffers belong to their directory.
+(cl-defmethod multi-buf-category ((_backend multi-buf-term-backend) buf)
+  (with-current-buffer buf
+    default-directory))
+
+(defun multi-buf-new-term ()
+  "Create a `term' buffer."
+  (interactive)
+  (multi-buf-create multi-buf-term-backend-instance))
+
+(defun multi-buf-term-dwim (&optional arg)
+  "Cycle to, switch to or create a new `term'.
+
+If no prefix argument ARG is provided then cycle forward to the
+next term. If the prefix argument is an integer, then perform
+cycling according to its numeric value. If no term exists other
+than the current buffer, create a new one. With a universal
+prefix argument, always create a new term. With two universal
+prefix arguments, switch to a term in the same directory using
+completion. With three universal prefix arguments, switch to any
+term using completion. With a negative universal prefix argument,
+switch to a buffer for any backend."
+  (interactive "P")
+  (multi-buf-dwim multi-buf-term-backend-instance arg))
+
 ;;; vterm
 (defclass multi-buf-vterm-backend (multi-buf-backend) ())
 
