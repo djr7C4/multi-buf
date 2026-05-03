@@ -468,6 +468,13 @@ argument, switch to a buffer for any backend."
   ;; themselves.
   (or (buffer-base-buffer buf) buf))
 
+;; When the current buffer is a base buffer and we are cycling, display the
+;; indirect buffer in the other window.
+(cl-defmethod multi-buf-display-buffer-action-type ((backend multi-buf-indirect-backend) buf action-type)
+  (unless (and (eq action-type 'cycle)
+               (multi-buf-match-p backend (current-buffer))
+               (not (buffer-base-buffer (current-buffer))))
+    (cl-call-next-method)))
 
 (defun multi-buf-new-indirect ()
   "Create an indirect buffer."
