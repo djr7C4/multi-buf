@@ -3,7 +3,7 @@
 
 ;; Author: David J. Rosenbaum <djr7c4@gmail.com>
 
-;; Keywords: TODO
+;; Keywords: buffers, convenience, processes, terminals, tools
 ;; URL: https://github.com/djr7C4/multi-buf
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "29.1"))
