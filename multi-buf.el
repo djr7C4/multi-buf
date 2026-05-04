@@ -134,7 +134,7 @@ action such as `multi-buf-switch'."))
     ;; Otherwise, use the other window.
     (cycle (and (multi-buf-match-p backend (current-buffer))
                 multi-buf-display-buffer-same-window-action))
-    (switch multi-buf-display-buffer-same-window-action)))
+    (switch nil)))
 
 (cl-defgeneric multi-buf-match-p (backend buf)
   "Determine if BUF belongs to BACKEND.")
