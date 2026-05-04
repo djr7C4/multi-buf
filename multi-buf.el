@@ -459,7 +459,7 @@ switch to a buffer for any backend.\""
   (let ((base-buf (or (buffer-base-buffer) (current-buffer))))
     ;; Include the base buffer.
     (multi-buf-register backend base-buf)
-    (make-indirect-buffer base-buf (generate-new-buffer-name (buffer-name base-buf)))))
+    (make-indirect-buffer base-buf (generate-new-buffer-name (buffer-name base-buf)) t)))
 
 (cl-defmethod multi-buf-new :around ((backend multi-buf-indirect-backend))
   ;; Prevent the user from creating multi-buf-managed indirect buffers from
