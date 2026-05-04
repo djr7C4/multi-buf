@@ -246,19 +246,38 @@ category will be considered."
                              (memq (or (cdr-safe b) b) bufs)))))
     (multi-buf-pop-to backend buf 'switch)))
 
-(defun multi-buf-dwim (backend arg)
-  "Cycle to, switch to or create a buffer for BACKEND.
+(cl-defun multi-buf-dwim-docstring (&key name (command-phrase (format "`%s'" name)) (buffer-name (format "%s buffer" name)))
+  (let ((docstring (format "\"Cycle to, switch to or create a new %1$s.
 
-ARG is the prefix argument. If it is nil or an integer, then
-perform cycling according to its numeric value if a buffer exists
-for BACKEND other than the current buffer. If no such buffer
-exists, create a new one. With a universal prefix argument,
-always create a new buffer. With two universal prefix arguments,
-switch to a buffer for BACKEND using completion. With three
-universal prefix arguments, switch to a buffer for BACKEND using
-completion with the default value of `:use-category' negated.
-With a negative universal prefix argument, switch to a buffer for
-any backend."
+If no prefix argument ARG is provided then cycle forward to the
+next %2$s. If the prefix argument is an integer, then perform
+cycling according to its numeric value. If no %2$s exists other
+than the current buffer, create a new one. With a universal
+prefix argument, always create a new %2$s. With two universal
+prefix arguments, switch to a %2$s in the same project using
+completion. With three universal prefix arguments, switch to any
+%2$s using completion. With a negative universal prefix argument,
+switch to a buffer for any backend.\""
+                           command-phrase
+                           buffer-name)))
+    (with-temp-buffer
+      (emacs-lisp-mode)
+      (insert docstring)
+      (goto-char (point-min))
+      (forward-line 2)
+      (message "pt: %d" (point))
+      (fill-paragraph)
+      ;; Remove quotes from the docstring. These were included initially so that
+      ;; `fill-paragraph' would work correctly.
+      (goto-char (point-min))
+      (delete-char 1)
+      (goto-char (1- (point-max)))
+      (delete-char 1)
+      (substring-no-properties (buffer-string)))))
+
+(defun multi-buf-dwim (backend arg)
+  (:documentation (multi-buf-dwim-docstring :command-phrase "BACKEND buffer"
+                                            :buffer-name "BACKEND buffer"))
   (cond
    ((or (null arg) (eq arg '-) (integerp arg))
     (or (multi-buf-next backend :offset (prefix-numeric-value arg))
@@ -292,17 +311,7 @@ any backend."
   (multi-buf-create multi-buf-eshell-backend-instance))
 
 (defun multi-buf-eshell-dwim (&optional arg)
-  "Cycle to, switch to or create a new `eshell' buffer.
-
-If no prefix argument ARG is provided then cycle forward to the
-next eshell buffer. If the prefix argument is an integer, then
-perform cycling according to its numeric value. If no eshell buffer
-buffer exists other than the current buffer, create a new one.
-With a universal prefix argument, always create a new eshell buffer. With
-two universal prefix arguments, switch to a eshell buffer in the same
-directory using completion. With three universal prefix
-arguments, switch to any eshell buffer using completion. With a negative
-universal prefix argument, switch to a buffer for any backend."
+  (:documentation (multi-buf-dwim-docstring :name "eshell"))
   (interactive "P")
   (multi-buf-dwim multi-buf-eshell-backend-instance arg))
 
@@ -322,18 +331,7 @@ universal prefix argument, switch to a buffer for any backend."
   (multi-buf-create multi-buf-shell-backend-instance))
 
 (defun multi-buf-shell-dwim (&optional arg)
-  "Cycle to, switch to or create a new `shell' buffer.
-
-If no prefix argument ARG is provided then cycle forward to the
-next shell buffer. If the prefix argument is an integer, then
-perform cycling according to its numeric value. If no shell
-buffer buffer exists other than the current buffer, create a new
-one. With a universal prefix argument, always create a new shell
-buffer. With two universal prefix arguments, switch to a shell
-buffer in the same directory using completion. With three
-universal prefix arguments, switch to any shell buffer using
-completion. With a negative universal prefix argument, switch to
-a buffer for any backend."
+  (:documentation (multi-buf-dwim-docstring :name "shell"))
   (interactive "P")
   (multi-buf-dwim multi-buf-shell-backend-instance arg))
 
@@ -363,17 +361,7 @@ a buffer for any backend."
   (multi-buf-create multi-buf-term-backend-instance))
 
 (defun multi-buf-term-dwim (&optional arg)
-  "Cycle to, switch to or create a new `term'.
-
-If no prefix argument ARG is provided then cycle forward to the
-next term. If the prefix argument is an integer, then perform
-cycling according to its numeric value. If no term exists other
-than the current buffer, create a new one. With a universal
-prefix argument, always create a new term. With two universal
-prefix arguments, switch to a term in the same directory using
-completion. With three universal prefix arguments, switch to any
-term using completion. With a negative universal prefix argument,
-switch to a buffer for any backend."
+  (:documentation (multi-buf-dwim-docstring :name "term"))
   (interactive "P")
   (multi-buf-dwim multi-buf-term-backend-instance arg))
 
@@ -393,17 +381,7 @@ switch to a buffer for any backend."
   (multi-buf-create multi-buf-vterm-backend-instance))
 
 (defun multi-buf-vterm-dwim (&optional arg)
-  "Cycle to, switch to or create a new `vterm'.
-
-If no prefix argument ARG is provided then cycle forward to the
-next vterm. If the prefix argument is an integer, then perform
-cycling according to its numeric value. If no vterm exists other
-than the current buffer, create a new one. With a universal
-prefix argument, always create a new vterm. With two universal
-prefix arguments, switch to a vterm in the same directory using
-completion. With three universal prefix arguments, switch to any
-vterm using completion. With a negative universal prefix
-argument, switch to a buffer for any backend."
+  (:documentation (multi-buf-dwim-docstring :name "vterm"))
   (interactive "P")
   (multi-buf-dwim multi-buf-vterm-backend-instance arg))
 
@@ -429,18 +407,7 @@ argument, switch to a buffer for any backend."
   (multi-buf-create multi-buf-gptel-backend-instance))
 
 (defun multi-buf-gptel-dwim (&optional arg)
-  "Cycle to, switch to or create a new `gptel' buffer.
-
-If no prefix argument ARG is provided then cycle forward to the
-next gptel buffer for the current project. If the prefix argument
-is an integer, then perform cycling according to its numeric
-value. If no gptel buffer for the current project exists other
-than the current buffer, create a new one. With a universal
-prefix argument, always create a new gptel buffer. With two
-universal prefix arguments, switch to a gptel buffer in the same
-project using completion. With three universal prefix arguments,
-switch to any gptel buffer using completion. With a negative
-universal prefix argument, switch to a buffer for any backend."
+  (:documentation (multi-buf-dwim-docstring :name "gptel"))
   (interactive "P")
   (multi-buf-dwim multi-buf-gptel-backend-instance arg))
 
@@ -460,19 +427,7 @@ universal prefix argument, switch to a buffer for any backend."
   (multi-buf-create multi-buf-gptel-agent-backend-instance))
 
 (defun multi-buf-gptel-agent-dwim (&optional arg)
-  "Cycle to, switch to or create a new `gptel-agent' buffer.
-
-If no prefix argument ARG is provided then cycle forward to the
-next gptel-agent buffer for the current project. If the prefix
-argument is an integer, then perform cycling according to its
-numeric value. If no gptel-agent buffer for the current project
-exists other than the current buffer, create a new one. With a
-universal prefix argument, always create a new gptel-agent
-buffer. With two universal prefix arguments, switch to a
-gptel-agent buffer in the same project using completion. With
-three universal prefix arguments, switch to any gptel-agent
-buffer using completion. With a negative universal prefix
-argument, switch to a buffer for any backend."
+  (:documentation (multi-buf-dwim-docstring :name "gptel-agent"))
   (interactive "P")
   (multi-buf-dwim multi-buf-gptel-agent-backend-instance arg))
 
@@ -533,21 +488,8 @@ argument, switch to a buffer for any backend."
   (multi-buf-create multi-buf-indirect-backend-instance))
 
 (defun multi-buf-indirect-dwim (&optional arg)
-  "Cycle to, switch to or create a new indirect buffer.
-
-The indirect buffer is created for the current buffer or the base
-buffer of the current buffer if the current buffer is indirect.
-
-If no prefix argument ARG is provided then cycle forward among
-the current base buffer and its indirect buffers. If the prefix
-argument is an integer, then perform cycling according to its
-numeric value. If no indirect buffer exists, create a new one.
-With a universal prefix argument, always create a new indirect
-buffer. With two universal prefix arguments, switch to the base
-buffer or an indirect buffer using completion. With three
-universal prefix arguments, switch to any base buffer or indirect
-buffer using completion. With a negative universal prefix
-argument, switch to a buffer for any backend."
+  (:documentation (multi-buf-dwim-docstring :command-phrase "indirect buffer"
+                                            :buffer-name "indirect buffer"))
   (interactive "P")
   (multi-buf-dwim multi-buf-indirect-backend-instance arg))
 
