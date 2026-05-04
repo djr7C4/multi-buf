@@ -246,7 +246,11 @@ category will be considered."
                              (memq (or (cdr-safe b) b) bufs)))))
     (multi-buf-pop-to backend buf 'switch)))
 
-(cl-defun multi-buf-dwim-docstring (&key name (command-phrase (format "`%s'" name)) (buffer-name (format "%s buffer" name)))
+(cl-defun multi-buf-dwim-docstring
+    (&key
+     name
+     (command-phrase (format "`%s'" name))
+     (buffer-name (format "%s buffer" name)))
   (let ((docstring (format "\"Cycle to, switch to or create a new %1$s.
 
 If no prefix argument ARG is provided then cycle forward to the
@@ -294,142 +298,81 @@ switch to a buffer for any backend.\""
    (t
     (multi-buf-pop-to backend (multi-buf-new backend) 'new))))
 
+(cl-defmacro multi-buf-define-backend
+    (name
+     &key
+     (backend-class (intern (format "multi-buf-%s-backend" name)))
+     (backend-instance (intern (format "multi-buf-%s-backend-instance" name)))
+     (backend-parent-classes '(multi-buf-backend))
+     new-form
+     (command-phrase (format "`%s'" name))
+     (buffer-name (format "%s buffer" name)))
+  (declare (indent 1))
+  `(progn
+     ,(and backend-class
+           `(defclass ,backend-class (,@backend-parent-classes) ()))
+     ,(and backend-instance
+           backend-class
+           `(defvar ,backend-instance (,backend-class :name ,name)))
+     ,(and backend-class
+           new-form
+           `(cl-defmethod multi-buf-new ((_backend ,backend-class))
+              ,new-form))
+     ,(and backend-instance
+           `(defun ,(intern (format "multi-buf-new-%s" name)) ()
+              ,(format "Create a new %s buffer." command-phrase)
+              (interactive)
+              (multi-buf-create ,backend-instance)))
+     ,(and backend-instance
+           `(defun ,(intern (format "multi-buf-%s-dwim" name)) (&optional arg)
+              ,(multi-buf-dwim-docstring :name name
+                                         :command-phrase command-phrase
+                                         :buffer-name buffer-name)
+              (interactive "P")
+              (multi-buf-dwim ,backend-instance arg)))))
+
 ;;; Default backends
-;;; eshell
-(defclass multi-buf-eshell-backend (multi-buf-backend) ())
+(multi-buf-define-backend "eshell"
+  :new-form (multi-buf-with-displayed-buffer (eshell '-)))
 
-(defvar multi-buf-eshell-backend-instance (multi-buf-eshell-backend :name "eshell"))
+(multi-buf-define-backend "shell"
+  :new-form (multi-buf-with-displayed-buffer
+              (shell (generate-new-buffer-name "*shell*"))))
 
-(declare-function eshell "eshell")
-
-(cl-defmethod multi-buf-new ((_backend multi-buf-eshell-backend))
-  (multi-buf-with-displayed-buffer (eshell '-)))
-
-(defun multi-buf-new-eshell ()
-  "Create a `eshell' buffer."
-  (interactive)
-  (multi-buf-create multi-buf-eshell-backend-instance))
-
-(defun multi-buf-eshell-dwim (&optional arg)
-  (:documentation (multi-buf-dwim-docstring :name "eshell"))
-  (interactive "P")
-  (multi-buf-dwim multi-buf-eshell-backend-instance arg))
-
-;;; shell
-(defclass multi-buf-shell-backend (multi-buf-backend) ())
-
-(defvar multi-buf-shell-backend-instance (multi-buf-shell-backend :name "shell"))
-
-(declare-function shell "shell")
-
-(cl-defmethod multi-buf-new ((_backend multi-buf-shell-backend))
-  (multi-buf-with-displayed-buffer (shell (generate-new-buffer-name "*shell*"))))
-
-(defun multi-buf-new-shell ()
-  "Create a `shell' buffer."
-  (interactive)
-  (multi-buf-create multi-buf-shell-backend-instance))
-
-(defun multi-buf-shell-dwim (&optional arg)
-  (:documentation (multi-buf-dwim-docstring :name "shell"))
-  (interactive "P")
-  (multi-buf-dwim multi-buf-shell-backend-instance arg))
-
-;;; term
-(defclass multi-buf-term-backend (multi-buf-backend) ())
-
-(defvar multi-buf-term-backend-instance (multi-buf-term-backend :name "term"))
-
-(declare-function term "term")
-
-(cl-defmethod multi-buf-new ((_backend multi-buf-term-backend))
+(multi-buf-define-backend "term"
   ;; `make-term' adds earmuffs to the name so we can't use
   ;; `generate-new-buffer-name'.
-  (let* ((base-name "terminal")
-         (name base-name)
-         (suffix 1))
-    (while (get-buffer (format "*%s*" name))
-      (setq name (format "%s<%d>" base-name (cl-incf suffix))))
-    (make-term name
-               (or explicit-shell-file-name
-                   (getenv "ESHELL")
-                   shell-file-name))))
+  :new-form (let* ((base-name "terminal")
+                   (name base-name)
+                   (suffix 1))
+              (while (get-buffer (format "*%s*" name))
+                (setq name (format "%s<%d>" base-name (cl-incf suffix))))
+              (make-term name
+                         ;; Copied from `term'.
+                         (or explicit-shell-file-name
+                             (getenv "ESHELL")
+                             shell-file-name))))
 
-(defun multi-buf-new-term ()
-  "Create a `term' buffer."
-  (interactive)
-  (multi-buf-create multi-buf-term-backend-instance))
+(multi-buf-define-backend "vterm"
+  :new-form (multi-buf-with-displayed-buffer (vterm '-)))
 
-(defun multi-buf-term-dwim (&optional arg)
-  (:documentation (multi-buf-dwim-docstring :name "term"))
-  (interactive "P")
-  (multi-buf-dwim multi-buf-term-backend-instance arg))
+(multi-buf-define-backend "vterm"
+  :new-form (multi-buf-with-displayed-buffer (vterm '-)))
 
-;;; vterm
-(defclass multi-buf-vterm-backend (multi-buf-backend) ())
+(multi-buf-define-backend "gptel"
+  :new-form (let ((name (generate-new-buffer-name "*gptel*")))
+              (multi-buf-with-displayed-buffer
+                (gptel name
+                       nil
+                       ;; Support the `gptel' feature for inserting regions into
+                       ;; the buffer.
+                       (and (use-region-p)
+                            (buffer-substring (region-beginning) (region-end)))
+                       t))))
 
-(defvar multi-buf-vterm-backend-instance (multi-buf-vterm-backend :name "vterm"))
-
-(declare-function vterm "vterm")
-
-(cl-defmethod multi-buf-new ((_backend multi-buf-vterm-backend))
-  (multi-buf-with-displayed-buffer (vterm '-)))
-
-(defun multi-buf-new-vterm ()
-  "Create a `vterm' buffer."
-  (interactive)
-  (multi-buf-create multi-buf-vterm-backend-instance))
-
-(defun multi-buf-vterm-dwim (&optional arg)
-  (:documentation (multi-buf-dwim-docstring :name "vterm"))
-  (interactive "P")
-  (multi-buf-dwim multi-buf-vterm-backend-instance arg))
-
-;;; gptel
-(defclass multi-buf-gptel-backend (multi-buf-backend) ())
-
-(defvar multi-buf-gptel-backend-instance (multi-buf-gptel-backend :name "gptel"))
-
-(declare-function gptel "gptel")
-
-(cl-defmethod multi-buf-new ((_backend multi-buf-gptel-backend))
-  (let ((name (generate-new-buffer-name "*gptel*")))
-    (multi-buf-with-displayed-buffer
-      (gptel name
-             nil
-             ;; Support the `gptel' feature for inserting regions into the buffer.
-             (and (use-region-p) (buffer-substring (region-beginning) (region-end)))
-             t))))
-
-(defun multi-buf-new-gptel ()
-  "Create a `gptel' buffer."
-  (interactive)
-  (multi-buf-create multi-buf-gptel-backend-instance))
-
-(defun multi-buf-gptel-dwim (&optional arg)
-  (:documentation (multi-buf-dwim-docstring :name "gptel"))
-  (interactive "P")
-  (multi-buf-dwim multi-buf-gptel-backend-instance arg))
-
-;;; gptel-agent
-(defclass multi-buf-gptel-agent-backend (multi-buf-backend) ())
-
-(defvar multi-buf-gptel-agent-backend-instance (multi-buf-gptel-agent-backend :name "gptel-agent"))
-
-(declare-function gptel-agent "gptel-agent")
-
-(cl-defmethod multi-buf-new ((_backend multi-buf-gptel-agent-backend))
-  (multi-buf-with-displayed-buffer (gptel-agent (multi-buf-project-root))))
-
-(defun multi-buf-new-gptel-agent ()
-  "Create a `gptel-agent' buffer."
-  (interactive)
-  (multi-buf-create multi-buf-gptel-agent-backend-instance))
-
-(defun multi-buf-gptel-agent-dwim (&optional arg)
-  (:documentation (multi-buf-dwim-docstring :name "gptel-agent"))
-  (interactive "P")
-  (multi-buf-dwim multi-buf-gptel-agent-backend-instance arg))
+(multi-buf-define-backend "gptel-agent"
+  :new-form (multi-buf-with-displayed-buffer
+              (gptel-agent (multi-buf-project-root))))
 
 ;;; Indirect buffers
 (defclass multi-buf-indirect-backend (multi-buf-backend) ())
