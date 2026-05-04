@@ -402,7 +402,15 @@ switch to a buffer for any backend.\""
   (let ((base-buf (or (buffer-base-buffer) (current-buffer))))
     ;; Include the base buffer.
     (multi-buf-register backend base-buf)
-    (make-indirect-buffer base-buf (generate-new-buffer-name (buffer-name base-buf)) t)))
+    (with-current-buffer
+        (make-indirect-buffer base-buf (generate-new-buffer-name (buffer-name base-buf)) t)
+      ;; Buffer-local variables are copied from the base buffer via
+      ;; `make-indirect-buffer' since the clone argument is t above. We remove
+      ;; the local binding for `multi-buf-backend-instance' so that
+      ;; `multi-buf-register' won't think that the buffer has already been
+      ;; registered.
+      (kill-local-variable 'multi-buf-backend-instance)
+      (current-buffer))))
 
 (cl-defmethod multi-buf-new :around ((backend multi-buf-indirect-backend))
   ;; Prevent the user from creating multi-buf-managed indirect buffers from
