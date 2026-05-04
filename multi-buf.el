@@ -116,7 +116,7 @@ while `switch' indicates a buffer switching action such as
     (inhibit-same-window . nil))
   "The `display-buffer' action to show a buffer in the same window.")
 
-(cl-defgeneric multi-buf-display-buffer-action-type (backend buf action-type)
+(cl-defgeneric multi-buf-display-buffer-action (backend buf action-type)
   (:documentation
    "Return the `display-buffer' action to use for BUF with BACKEND.
 
@@ -127,7 +127,7 @@ was just created while `cycle' indicates a \"next\" or
 `multi-buf-previous'. `switch' indicates a buffer switching
 action such as `multi-buf-switch'."))
 
-(cl-defmethod multi-buf-display-buffer-action-type ((backend multi-buf-backend) _buf action-type)
+(cl-defmethod multi-buf-display-buffer-action ((backend multi-buf-backend) _buf action-type)
   (cl-ecase action-type
     (new nil)
     ;; When cycling from a buffer for this backend, use the same window.
@@ -172,7 +172,7 @@ action such as `multi-buf-switch'."))
       (error "No backend found for %S" buf))))
 
 (cl-defmethod multi-buf-pop-to ((backend multi-buf-backend) buf action-type)
-  (pop-to-buffer buf (multi-buf-display-buffer-action-type backend buf action-type)))
+  (pop-to-buffer buf (multi-buf-display-buffer-action backend buf action-type)))
 
 ;;; Commands
 (defun multi-buf-create (backend)
@@ -551,7 +551,7 @@ argument, switch to a buffer for any backend."
 
 ;; When the current buffer is a base buffer and we are cycling, display the
 ;; indirect buffer in the other window.
-(cl-defmethod multi-buf-display-buffer-action-type ((backend multi-buf-indirect-backend) buf action-type)
+(cl-defmethod multi-buf-display-buffer-action ((backend multi-buf-indirect-backend) buf action-type)
   (unless (and (eq action-type 'cycle)
                (multi-buf-match-p backend (current-buffer))
                (not (buffer-base-buffer (current-buffer))))
