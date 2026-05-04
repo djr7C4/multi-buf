@@ -86,7 +86,7 @@ candidates when cycling or switching to a buffer using
 then there is no need to implement this method."))
 
 (cl-defmethod multi-buf-category ((_backend multi-buf-backend) _buf)
-  nil)
+  (multi-buf-project-root))
 
 (cl-defgeneric multi-buf-use-category-default (backend action-type)
   (:documentation
@@ -286,11 +286,6 @@ any backend."
 (cl-defmethod multi-buf-new ((_backend multi-buf-eshell-backend))
   (multi-buf-with-displayed-buffer (eshell '-)))
 
-;; `eshell' buffers belong to their directory.
-(cl-defmethod multi-buf-category ((_backend multi-buf-eshell-backend) buf)
-  (with-current-buffer buf
-    default-directory))
-
 (defun multi-buf-new-eshell ()
   "Create a `eshell' buffer."
   (interactive)
@@ -320,11 +315,6 @@ universal prefix argument, switch to a buffer for any backend."
 
 (cl-defmethod multi-buf-new ((_backend multi-buf-shell-backend))
   (multi-buf-with-displayed-buffer (shell (generate-new-buffer-name "*shell*"))))
-
-;; `shell' buffers belong to their directory.
-(cl-defmethod multi-buf-category ((_backend multi-buf-shell-backend) buf)
-  (with-current-buffer buf
-    default-directory))
 
 (defun multi-buf-new-shell ()
   "Create a `shell' buffer."
@@ -367,11 +357,6 @@ a buffer for any backend."
                    (getenv "ESHELL")
                    shell-file-name))))
 
-;; `term' buffers belong to their directory.
-(cl-defmethod multi-buf-category ((_backend multi-buf-term-backend) buf)
-  (with-current-buffer buf
-    default-directory))
-
 (defun multi-buf-new-term ()
   "Create a `term' buffer."
   (interactive)
@@ -401,11 +386,6 @@ switch to a buffer for any backend."
 
 (cl-defmethod multi-buf-new ((_backend multi-buf-vterm-backend))
   (multi-buf-with-displayed-buffer (vterm '-)))
-
-;; `vterm' buffers belong to their directory.
-(cl-defmethod multi-buf-category ((_backend multi-buf-vterm-backend) buf)
-  (with-current-buffer buf
-    default-directory))
 
 (defun multi-buf-new-vterm ()
   "Create a `vterm' buffer."
@@ -443,11 +423,6 @@ argument, switch to a buffer for any backend."
              (and (use-region-p) (buffer-substring (region-beginning) (region-end)))
              t))))
 
-;; `gptel' buffers belong to their project.
-(cl-defmethod multi-buf-category ((_backend multi-buf-gptel-backend) buf)
-  (with-current-buffer buf
-    (multi-buf-project-root)))
-
 (defun multi-buf-new-gptel ()
   "Create a `gptel' buffer."
   (interactive)
@@ -478,11 +453,6 @@ universal prefix argument, switch to a buffer for any backend."
 
 (cl-defmethod multi-buf-new ((_backend multi-buf-gptel-agent-backend))
   (multi-buf-with-displayed-buffer (gptel-agent (multi-buf-project-root))))
-
-;; `gptel-agent' buffers belong to their project.
-(cl-defmethod multi-buf-category ((_backend multi-buf-gptel-agent-backend) buf)
-  (with-current-buffer buf
-    (multi-buf-project-root)))
 
 (defun multi-buf-new-gptel-agent ()
   "Create a `gptel-agent' buffer."
