@@ -359,6 +359,15 @@ switch to a buffer for any backend.\""
 (multi-buf-define-backend "vterm"
   :new-form (multi-buf-with-displayed-buffer (vterm '-)))
 
+(multi-buf-define-backend "chatgpt-shell"
+  :new-form (multi-buf-with-displayed-buffer (chatgpt-shell t)))
+
+(multi-buf-define-backend "agent-shell"
+  ;; `multi-buf-with-displayed-buffer' doesn't work with `agent-shell'.
+  :new-form (prog1
+                (agent-shell '(4))
+              (bury-buffer)))
+
 (multi-buf-define-backend "gptel"
   :new-form (let ((name (generate-new-buffer-name "*gptel*")))
               (multi-buf-with-displayed-buffer
