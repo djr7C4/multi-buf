@@ -259,7 +259,8 @@ switch to any buffer for any backend."
     (&key
      name
      (command-phrase (format "`%s'" name))
-     (buffer-name (format "%s buffer" name)))
+     (buffer-name (format "%s buffer" name))
+     region-force-new)
   (let ((docstring (format "\"Cycle to, switch to or create a new %1$s.
 
 If no prefix argument ARG is provided then cycle forward to the
@@ -270,9 +271,12 @@ prefix argument, always create a new %2$s. With two universal
 prefix arguments, switch to a %2$s in the same project using
 completion. With three universal prefix arguments, switch to any
 %2$s using completion. With a negative universal prefix argument,
-switch to a buffer for any backend.\""
+switch to a buffer for any backend.%s\""
                            command-phrase
-                           buffer-name)))
+                           buffer-name
+                           (if region-force-new
+                               (format "\n\nWhen REGION-FORCE-NEW is non-nil, always create a new %s." buffer-name)
+                             ""))))
     (with-temp-buffer
       (emacs-lisp-mode)
       (insert docstring)
@@ -288,12 +292,15 @@ switch to a buffer for any backend.\""
       (delete-char 1)
       (substring-no-properties (buffer-string)))))
 
-(defun multi-buf-dwim (backend arg)
+(cl-defun multi-buf-dwim (backend arg &key region-force-new)
   (:documentation (multi-buf-dwim-docstring :command-phrase "BACKEND buffer"
-                                            :buffer-name "BACKEND buffer"))
+                                            :buffer-name "BACKEND buffer"
+                                            :region-force-new t))
   (cond
    ((or (null arg) (eq arg '-) (integerp arg))
-    (or (multi-buf-next backend :offset (prefix-numeric-value arg))
+    (or (and (not (and region-force-new
+                       (use-region-p)))
+             (multi-buf-next backend :offset (prefix-numeric-value arg)))
         ;; If there is no buffer to switch to other than the current one, create
         ;; a new buffer.
         (multi-buf-pop-to backend (multi-buf-new backend) 'new)))
@@ -315,7 +322,8 @@ switch to a buffer for any backend.\""
      (backend-parent-classes '(multi-buf-backend))
      new-form
      (command-phrase (format "`%s'" name))
-     (buffer-name (format "%s buffer" name)))
+     (buffer-name (format "%s buffer" name))
+     region-force-new)
   (declare (indent 1))
   `(progn
      ,(and backend-class
@@ -338,7 +346,7 @@ switch to a buffer for any backend.\""
                                          :command-phrase command-phrase
                                          :buffer-name buffer-name)
               (interactive "P")
-              (multi-buf-dwim ,backend-instance arg)))))
+              (multi-buf-dwim ,backend-instance arg :region-force-new ,region-force-new)))))
 
 ;;; Default backends
 (multi-buf-define-backend "eshell"
@@ -386,11 +394,15 @@ switch to a buffer for any backend.\""
                        ;; the buffer.
                        (and (use-region-p)
                             (buffer-substring (region-beginning) (region-end)))
-                       t))))
+                       t)))
+  ;; When a region is selected, always create a new gptel with the selected
+  ;; region as the initial prompt.
+  :region-force-new t)
 
 (multi-buf-define-backend "gptel-agent"
   :new-form (multi-buf-with-displayed-buffer
-              (gptel-agent (multi-buf-project-root))))
+              (gptel-agent (multi-buf-project-root)))
+  :region-force-new t)
 
 ;;; Indirect buffers
 (defclass multi-buf-indirect-backend (multi-buf-backend) ())
