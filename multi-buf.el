@@ -226,16 +226,22 @@ same category will be considered."
                                           current-prefix-arg))))
   (multi-buf-next backend :offset (- offset) :use-category use-category))
 
-(cl-defun multi-buf-switch (backend &key (use-category (multi-buf-use-category-default backend 'switch)))
+(cl-defun multi-buf-switch (backend &key (use-category (multi-buf-use-category-default backend 'switch)) all)
   "Switch to a buffer for BACKEND.
 
-If USE-CATEGORY is non-nil, then only buffers with the same
-category will be considered."
+If USE-CATEGORY is non-nil (interactively with a universal prefix
+argument), switch to buffers with the same category. When ALL is
+non-nil (interactively with two universal prefix arguments), then
+switch to any buffer for any backend."
   (interactive (let ((backend multi-buf-backend-instance))
                  (list backend
                        :use-category (xor (multi-buf-use-category-default backend 'switch)
-                                          current-prefix-arg))))
-  (let* ((bufs (multi-buf-filter backend use-category))
+                                          (and (consp current-prefix-arg)
+                                               (not (equal current-prefix-arg '(16)))))
+                       :all (equal current-prefix-arg '(16)))))
+  (let* ((bufs (if all
+                   (multi-buf-all)
+                 (multi-buf-filter backend use-category)))
          (buf (read-buffer (format "Choose %sbuffer: "
                                    (if backend
                                        (concat (oref backend name) " ")
