@@ -108,8 +108,10 @@ while `switch' indicates a buffer switching action such as
   (:documentation
    "Determine if BUF should be an option when switching any buffer."))
 
-(cl-defmethod multi-buf-include-in-general-switch-p ((backend multi-buf-backend) _buf)
-  (oref backend include-in-general-switch-p))
+(cl-defmethod multi-buf-include-in-general-switch-p ((backend multi-buf-backend) buf)
+  (or (oref backend include-in-general-switch-p)
+      ;; Buffers that match the current buffer are always included.
+      (multi-buf-match-p multi-buf-backend-instance buf)))
 
 (defvar multi-buf-display-buffer-same-window-action
   '((display-buffer-reuse-window display-buffer-same-window)
@@ -145,9 +147,9 @@ action such as `multi-buf-switch'."))
 
 (defun multi-buf-all ()
   (cl-remove-if-not (lambda (buf)
-                      (with-current-buffer buf
-                        (and-let* ((backend multi-buf-backend-instance))
-                          (multi-buf-include-in-general-switch-p backend buf))))
+                      (and-let* ((backend (with-current-buffer buf
+                                            multi-buf-backend-instance)))
+                        (multi-buf-include-in-general-switch-p backend buf)))
                     (buffer-list)))
 
 (cl-defgeneric multi-buf-filter (backend use-category))
