@@ -85,8 +85,9 @@ candidates when cycling or switching to a buffer using
 `completing-read'. If no such refinement is needed for a backend,
 then there is no need to implement this method."))
 
-(cl-defmethod multi-buf-category ((_backend multi-buf-backend) _buf)
-  (multi-buf-project-root))
+(cl-defmethod multi-buf-category ((_backend multi-buf-backend) buf)
+  (with-current-buffer buf
+    (multi-buf-project-root)))
 
 (cl-defgeneric multi-buf-use-category-default (backend action-type)
   (:documentation
