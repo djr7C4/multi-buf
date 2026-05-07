@@ -247,8 +247,8 @@ switch to any buffer for any backend."
                  (multi-buf-filter backend use-category)))
          (buf (read-buffer (format "Choose %sbuffer: "
                                    (if backend
-                                       (concat (oref backend name) " ")
-                                     ""))
+                                       (format "a %s " (oref backend name))
+                                     "any "))
                            nil
                            t
                            (lambda (b)
