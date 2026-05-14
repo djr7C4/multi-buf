@@ -282,7 +282,6 @@ switch to a buffer for any backend.%s\""
       (insert docstring)
       (goto-char (point-min))
       (forward-line 2)
-      (message "pt: %d" (point))
       (fill-paragraph)
       ;; Remove quotes from the docstring. These were included initially so that
       ;; `fill-paragraph' would work correctly.
