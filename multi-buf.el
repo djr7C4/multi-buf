@@ -1,5 +1,5 @@
 ;;; multi-buf.el --- Buffer multiplexer -*- lexical-binding: t; -*-
-;; Copyright (C) 2026 David J. Rosenbaum
+;; Copyright (C) 2026 David J. Rosenbaum <djr7c4@gmail.com>
 
 ;; Author: David J. Rosenbaum <djr7c4@gmail.com>
 
