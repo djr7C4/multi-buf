@@ -190,8 +190,9 @@ commands for specific backends."
 
 If no backend is available for the current buffer, switch to the
 next buffer for any backend. OFFSET specifies how many positions
-to move from the current buffer. If USE-CATEGORY is non-nil, then
-only buffers with the same category will be considered."
+to move from the current buffer. If USE-CATEGORY is
+non-nil (interactively by default), then only buffers with the
+same category will be considered."
   (interactive (let ((backend multi-buf-backend-instance))
                  (list backend
                        :use-category (xor (multi-buf-use-category-default backend 'cycle)
@@ -221,8 +222,8 @@ only buffers with the same category will be considered."
   "Switch to the previous buffer for BACKEND.
 
 OFFSET specifies how many positions to move from the current
-buffer. If USE-CATEGORY is non-nil, then only buffers with the
-same category will be considered."
+buffer. If USE-CATEGORY is non-nil (interactively by default),
+then only buffers with the same category will be considered."
   (interactive (let ((backend multi-buf-backend-instance))
                  (list backend
                        :use-category (xor (multi-buf-use-category-default backend 'cycle)
@@ -232,8 +233,8 @@ same category will be considered."
 (cl-defun multi-buf-switch (backend &key (use-category (multi-buf-use-category-default backend 'switch)) all)
   "Switch to a buffer for BACKEND.
 
-If USE-CATEGORY is non-nil (interactively with a universal prefix
-argument), switch to buffers with the same category. When ALL is
+If USE-CATEGORY is non-nil (interactively by default), switch to
+buffers with the same category. When ALL is
 non-nil (interactively with two universal prefix arguments), then
 switch to any buffer for any backend."
   (interactive (let ((backend multi-buf-backend-instance))
