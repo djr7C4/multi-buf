@@ -112,7 +112,8 @@ while `switch' indicates a buffer switching action such as
 (cl-defmethod multi-buf-include-in-general-switch-p ((backend multi-buf-backend) buf)
   (or (oref backend include-in-general-switch-p)
       ;; Buffers that match the current buffer are always included.
-      (multi-buf-match-p multi-buf-backend-instance buf)))
+      (and multi-buf-backend-instance
+           (multi-buf-match-p multi-buf-backend-instance buf))))
 
 (defvar multi-buf-display-buffer-same-window-action
   '((display-buffer-reuse-window display-buffer-same-window)
