@@ -267,12 +267,14 @@ switch to any buffer for any backend."
 If no prefix argument ARG is provided then cycle forward to the
 next %2$s. If the prefix argument is an integer, then perform
 cycling according to its numeric value. If no %2$s exists other
-than the current buffer, create a new one. With a universal
-prefix argument, always create a new %2$s. With two universal
-prefix arguments, switch to a %2$s in the same project using
-completion. With three universal prefix arguments, switch to any
-%2$s using completion. With a negative universal prefix argument,
-switch to a buffer for any backend.%s\""
+than the current buffer, create a new one.
+
+With a universal prefix argument, always create a new %2$s. With
+two universal prefix arguments, switch to a %2$s in the same
+project using completion. With a minus sign as the prefix
+argument, switch to any %2$s using completion. With a negative
+universal prefix argument, switch to a buffer for any
+backend.%s\""
                            command-phrase
                            buffer-name
                            (if region-force-new
@@ -297,7 +299,7 @@ switch to a buffer for any backend.%s\""
                                             :buffer-name "BACKEND buffer"
                                             :region-force-new t))
   (cond
-   ((or (null arg) (eq arg '-) (integerp arg))
+   ((or (null arg) (integerp arg))
     (or (and (not (and region-force-new
                        (use-region-p)))
              (multi-buf-next backend :offset (prefix-numeric-value arg)))
@@ -306,7 +308,7 @@ switch to a buffer for any backend.%s\""
         (multi-buf-pop-to backend (multi-buf-new backend) 'new)))
    ((equal arg '(16))
     (multi-buf-switch backend))
-   ((equal arg '(64))
+   ((equal arg '-)
     (let ((use-category (multi-buf-use-category-default backend 'switch)))
       (multi-buf-switch backend :use-category (not use-category))))
    ((and (consp arg) (< (prefix-numeric-value arg) 0))
