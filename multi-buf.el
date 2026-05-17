@@ -244,7 +244,7 @@ switch to any buffer for any backend."
                                           (and (consp current-prefix-arg)
                                                (not (equal current-prefix-arg '(16)))))
                        :all (equal current-prefix-arg '(16)))))
-  (let* ((bufs (if all
+  (let* ((bufs (if (or all (not backend))
                    (multi-buf-all)
                  (multi-buf-filter backend use-category)))
          (buf (read-buffer (format "Choose %sbuffer: "
