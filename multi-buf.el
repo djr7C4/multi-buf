@@ -164,12 +164,16 @@ action such as `multi-buf-switch'."))
 
 (defun multi-buf-all ()
   (cl-remove-if-not (lambda (buf)
-                      (and-let* ((backend (with-current-buffer buf
-                                            multi-buf-backend-instance)))
-                        (multi-buf-include-in-general-switch-p backend buf)))
+                      (and (buffer-live-p buf)
+                           (and-let* ((backend (with-current-buffer buf
+                                                 multi-buf-backend-instance)))
+                             (multi-buf-include-in-general-switch-p backend buf))))
                     (buffer-list)))
 
 (cl-defgeneric multi-buf-filter (backend use-category))
+
+(cl-defmethod multi-buf-filter :around (_backend _use-category)
+  (cl-remove-if-not #'buffer-live-p (cl-call-next-method)))
 
 (cl-defmethod multi-buf-filter ((_backend (eql nil)) _use-category)
   (multi-buf-all))
