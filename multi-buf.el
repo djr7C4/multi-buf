@@ -194,7 +194,22 @@ action such as `multi-buf-switch'."))
   (pop-to-buffer buf (multi-buf-display-buffer-action backend buf action-type)))
 
 ;;; Commands
-(defvar multi-buf-extra-prefix-arguments nil)
+(defvar multi-buf-dwim-extra-prefix-arguments nil
+  "Indicates if `multi-buf-dwim' should use extra prefix arguments.
+
+This allows the use of the minus sign prefix argument to switch
+to any buffer with the same backend and a negative universal
+prefix argument to switch to a buffer for any backend. When nil,
+extra prefix arguments are not needed because `multi-buf-dwim'
+shows buffers grouped by their backend and category. Buffers with
+the same backend and category are shown first.
+
+The main reason to set this to t is that some completion
+frameworks such as `helm' and `ivy' do not support the necessary
+completion metadata keys.
+
+The multi-buf.el file needs to be reloaded to update the
+docstrings if this value is changed.")
 
 (defun multi-buf-create (backend)
   "Create a new buffer for BACKEND.
@@ -369,10 +384,10 @@ With a universal prefix argument, always create a new %2$s. With
 two universal prefix arguments, switch to %4$s%5$s\""
                            command-phrase
                            buffer-name
-                           (if multi-buf-extra-prefix-arguments
+                           (if multi-buf-dwim-extra-prefix-arguments
                                ""
                              " or a minus sign")
-                           (if multi-buf-extra-prefix-arguments
+                           (if multi-buf-dwim-extra-prefix-arguments
                                (format "a %1$s in the same project using
 completion. With a minus sign as the prefix argument, switch to any %1$s using
 completion. With a negative universal prefix argument, switch to a buffer for
@@ -405,7 +420,7 @@ always create a new %s if the region is active."
    ((or (null arg)
         ;; Treat '- as a numeric argument when extra prefix arguments are not
         ;; being used.
-        (and (not multi-buf-extra-prefix-arguments) (eq arg '-))
+        (and (not multi-buf-dwim-extra-prefix-arguments) (eq arg '-))
         (integerp arg))
     (or (and (not (and region-force-new
                        (use-region-p)))
@@ -414,16 +429,16 @@ always create a new %s if the region is active."
         ;; a new buffer.
         (multi-buf-pop-to backend (multi-buf-new backend) 'new)))
    ((equal arg '(16))
-    (if multi-buf-extra-prefix-arguments
+    (if multi-buf-dwim-extra-prefix-arguments
         (multi-buf-switch backend)
       (multi-buf-switch-group backend)))
-   ;; When `multi-buf-extra-prefix-arguments' is nil, the rest of the prefix
+   ;; When `multi-buf-dwim-extra-prefix-arguments' is nil, the rest of the prefix
    ;; arguments are not needed except for the default. Completion groups should
    ;; be used instead of filtering using prefix arguments.
-   ((and multi-buf-extra-prefix-arguments (equal arg '-))
+   ((and multi-buf-dwim-extra-prefix-arguments (equal arg '-))
     (let ((use-category (multi-buf-use-category-default backend 'switch)))
       (multi-buf-switch backend :use-category (not use-category))))
-   ((and multi-buf-extra-prefix-arguments
+   ((and multi-buf-dwim-extra-prefix-arguments
          (consp arg)
          (< (prefix-numeric-value arg) 0))
     (multi-buf-switch nil))
