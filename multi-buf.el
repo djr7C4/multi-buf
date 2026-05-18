@@ -294,10 +294,8 @@ switch to any buffer for any backend."
 (cl-defun multi-buf-switch-group (backend)
   "Switch to a buffer for a BACKEND.
 
-Buffers for the same backend as the current buffer come first in
-the completion. After sorting by backend, sort by category.
-Buffers in the same category as the current buffer come before
-those with other categories."
+Buffers for the same backend and category as the current buffer
+come first in the completion."
   (interactive (list multi-buf-backend-instance))
   (let ((sort-category (if backend
                            (multi-buf-category backend (current-buffer))
