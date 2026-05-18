@@ -89,6 +89,21 @@ then there is no need to implement this method."))
   (with-current-buffer buf
     (multi-buf-project-root)))
 
+(cl-defgeneric multi-buf-category-name (backend buf category)
+  (:documentation
+   "The human-readable version of category for BUF and BACKEND."))
+
+(cl-defmethod multi-buf-category-name (_backend _buf category)
+  (format "%s" category))
+
+(cl-defmethod multi-buf-category-name (_backend _buf (category string))
+  (if (file-exists-p category)
+      (abbreviate-file-name category)
+    category))
+
+(cl-defmethod multi-buf-category-name (_backend _buf (category buffer))
+  (buffer-name category))
+
 (cl-defgeneric multi-buf-use-category-default (backend action-type)
   (:documentation
    "Return the default value of the `:use-category' for BACKEND.
@@ -170,15 +185,17 @@ action such as `multi-buf-switch'."))
 (cl-defgeneric multi-buf-pop-to (backend buf action-type))
 
 (cl-defmethod multi-buf-pop-to ((_backend (eql nil)) buf action-type)
-  (with-current-buffer buf
-    (if-let* ((backend multi-buf-backend-instance))
-        (multi-buf-pop-to backend buf action-type)
-      (error "No backend found for %S" buf))))
+  (if-let* ((backend (with-current-buffer buf
+                       multi-buf-backend-instance)))
+      (multi-buf-pop-to backend buf action-type)
+    (error "No backend found for %S" buf)))
 
 (cl-defmethod multi-buf-pop-to ((backend multi-buf-backend) buf action-type)
   (pop-to-buffer buf (multi-buf-display-buffer-action backend buf action-type)))
 
 ;;; Commands
+(defvar multi-buf-extra-prefix-arguments nil)
+
 (defun multi-buf-create (backend)
   "Create a new buffer for BACKEND.
 
@@ -216,7 +233,8 @@ same category will be considered."
                (t
                 (elt bufs (mod (+ k offset) (length bufs)))))))
     (when buf
-      (multi-buf-pop-to backend buf 'cycle))
+      ;; Use the backend of the target buffer.
+      (multi-buf-pop-to nil buf 'cycle))
     buf))
 
 (cl-defun multi-buf-previous (backend &key (offset 1) (use-category (multi-buf-use-category-default backend 'cycle)))
@@ -255,7 +273,84 @@ switch to any buffer for any backend."
                            t
                            (lambda (b)
                              (memq (or (cdr-safe b) b) bufs)))))
-    (multi-buf-pop-to backend buf 'switch)))
+    ;; Use the backend of the target buffer.
+    (multi-buf-pop-to nil buf 'switch)))
+
+(cl-defun multi-buf-switch-group (backend)
+  "Switch to a buffer for a BACKEND.
+
+Buffers for the same backend as the current buffer come first in
+the completion. After sorting by backend, sort by category.
+Buffers in the same category as the current buffer come before
+those with other categories."
+  (interactive (list multi-buf-backend-instance))
+  (let ((sort-category (if backend
+                           (multi-buf-category backend (current-buffer))
+                         (gensym)))
+        (sort-backend (or backend (gensym))))
+    (cl-labels ((group-fun (candidate transform)
+                  (if transform
+                      candidate
+                    (with-current-buffer candidate
+                      (let* ((backend2 multi-buf-backend-instance)
+                             (category (multi-buf-category backend2 (current-buffer))))
+                        (format "%s (%s)"
+                                (oref backend2 name)
+                                (multi-buf-category-name backend2 (current-buffer) category))))))
+                (sort-fun (collection)
+                  (sort collection
+                        :key (lambda (buffer-name)
+                               (with-current-buffer buffer-name
+                                 (list multi-buf-backend-instance
+                                       (multi-buf-category multi-buf-backend-instance (current-buffer)))))
+                        ;; Sort lexicographically by (backend category) but
+                        ;; consider the current backend and category to come
+                        ;; before all other backends and categories.
+                        :lessp (plambda (`(,backend1 ,category1) `(,backend2 ,category2))
+                                 (cond
+                                  ((and (eq backend1 sort-backend)
+                                        (not (eq backend2 sort-backend)))
+                                   t)
+                                  ((and (not (eq backend1 sort-backend))
+                                        (eq backend2 sort-backend))
+                                   nil)
+                                  ((and (eq backend1 backend2)
+                                        (equal category1 sort-category)
+                                        (not (equal category2 sort-category)))
+                                   t)
+                                  ((and (eq backend1 backend2)
+                                        (not (equal category1 sort-category))
+                                        (equal category2 sort-category))
+                                   nil)
+                                  ;; If the current backend and category aren't
+                                  ;; involved, fallback to `value<'.
+                                  (t
+                                   (value< (list (oref backend1 name)
+                                                 (format "%s" category1))
+                                           (list (oref backend2 name)
+                                                 (format "%s" category2))))))))
+                (table-with-metadata (collection)
+                  (lambda (string predicate action)
+                    (if (eq action 'metadata)
+                        (let ((metadata (cdr (completion-metadata string collection predicate))))
+
+                          `(metadata ,@(map-merge 'alist
+                                                  metadata
+                                                  `((group-function . ,#'group-fun)
+                                                    (display-sort-function . ,#'sort-fun)
+                                                    (cycle-sort-function . ,#'sort-fun)))))
+                      (complete-with-action action collection string predicate)))))
+      (let* ((bufs (multi-buf-all))
+             (buf (minibuffer-with-setup-hook
+                      (lambda ()
+                        (setq-local minibuffer-completion-table (table-with-metadata minibuffer-completion-table)))
+                    (read-buffer "Choose a buffer: "
+                                 nil
+                                 t
+                                 (lambda (b)
+                                   (memq (or (cdr-safe b) b) bufs))))))
+        ;; Use the backend of the target buffer.
+        (multi-buf-pop-to nil buf 'switch)))))
 
 (cl-defun multi-buf-dwim-docstring
     (&key
@@ -266,23 +361,30 @@ switch to any buffer for any backend."
   (let ((docstring (format "\"Cycle to, switch to or create a new %1$s.
 
 If no prefix argument ARG is provided then cycle forward to the
-next %2$s. If the prefix argument is an integer, then perform
+next %2$s. If the prefix argument is an integer%3$s, then perform
 cycling according to its numeric value. If no %2$s exists other
 than the current buffer, create a new one.
 
 With a universal prefix argument, always create a new %2$s. With
-two universal prefix arguments, switch to a %2$s in the same
-project using completion. With a minus sign as the prefix
-argument, switch to any %2$s using completion. With a negative
-universal prefix argument, switch to a buffer for any
-backend.%s\""
+two universal prefix arguments, switch to %4$s%5$s\""
                            command-phrase
                            buffer-name
+                           (if multi-buf-extra-prefix-arguments
+                               ""
+                             " or a minus sign")
+                           (if multi-buf-extra-prefix-arguments
+                               (format "a %1$s in the same project using
+completion. With a minus sign as the prefix argument, switch to any %1$s using
+completion. With a negative universal prefix argument, switch to a buffer for
+any backend."
+                                       buffer-name)
+                             (format "any %s using completion." buffer-name))
                            (if region-force-new
-                               (format "\n\nWhen REGION-FORCE-NEW is non-nil, always create a new %s." buffer-name)
+                               (format "\n\nWhen REGION-FORCE-NEW is non-nil,
+always create a new %s if the region is active."
+                                       buffer-name)
                              ""))))
     (with-temp-buffer
-      (emacs-lisp-mode)
       (insert docstring)
       (goto-char (point-min))
       (forward-line 2)
@@ -300,7 +402,11 @@ backend.%s\""
                                             :buffer-name "BACKEND buffer"
                                             :region-force-new t))
   (cond
-   ((or (null arg) (integerp arg))
+   ((or (null arg)
+        ;; Treat '- as a numeric argument when extra prefix arguments are not
+        ;; being used.
+        (and (not multi-buf-extra-prefix-arguments) (eq arg '-))
+        (integerp arg))
     (or (and (not (and region-force-new
                        (use-region-p)))
              (multi-buf-next backend :offset (prefix-numeric-value arg)))
@@ -308,11 +414,18 @@ backend.%s\""
         ;; a new buffer.
         (multi-buf-pop-to backend (multi-buf-new backend) 'new)))
    ((equal arg '(16))
-    (multi-buf-switch backend))
-   ((equal arg '-)
+    (if multi-buf-extra-prefix-arguments
+        (multi-buf-switch backend)
+      (multi-buf-switch-group backend)))
+   ;; When `multi-buf-extra-prefix-arguments' is nil, the rest of the prefix
+   ;; arguments are not needed except for the default. Completion groups should
+   ;; be used instead of filtering using prefix arguments.
+   ((and multi-buf-extra-prefix-arguments (equal arg '-))
     (let ((use-category (multi-buf-use-category-default backend 'switch)))
       (multi-buf-switch backend :use-category (not use-category))))
-   ((and (consp arg) (< (prefix-numeric-value arg) 0))
+   ((and multi-buf-extra-prefix-arguments
+         (consp arg)
+         (< (prefix-numeric-value arg) 0))
     (multi-buf-switch nil))
    (t
     (multi-buf-pop-to backend (multi-buf-new backend) 'new))))
