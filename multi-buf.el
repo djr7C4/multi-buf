@@ -428,17 +428,25 @@ always create a new %s if the region is active."
         (multi-buf-pop-to backend (multi-buf-new backend) 'new)))
    ((equal arg '(16))
     (if multi-buf-dwim-extra-prefix-arguments
-        (multi-buf-switch backend)
+        (progn
+          ;; Set `this-command' so that `embark' won't try to run
+          ;; `multi-buf-dwim' again (which could cause buffer creation or
+          ;; cycling).
+          (setq this-command 'multi-buf-switch)
+          (multi-buf-switch backend))
+      (setq this-command 'multi-buf-switch-group)
       (multi-buf-switch-group backend)))
    ;; When `multi-buf-dwim-extra-prefix-arguments' is nil, the rest of the prefix
    ;; arguments are not needed except for the default. Completion groups should
    ;; be used instead of filtering using prefix arguments.
    ((and multi-buf-dwim-extra-prefix-arguments (equal arg '-))
     (let ((use-category (multi-buf-use-category-default backend 'switch)))
+      (setq this-command 'multi-buf-switch)
       (multi-buf-switch backend :use-category (not use-category))))
    ((and multi-buf-dwim-extra-prefix-arguments
          (consp arg)
          (< (prefix-numeric-value arg) 0))
+    (setq this-command 'multi-buf-switch)
     (multi-buf-switch nil))
    (t
     (multi-buf-pop-to backend (multi-buf-new backend) 'new))))
