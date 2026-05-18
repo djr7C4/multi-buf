@@ -194,23 +194,6 @@ action such as `multi-buf-switch'."))
   (pop-to-buffer buf (multi-buf-display-buffer-action backend buf action-type)))
 
 ;;; Commands
-(defvar multi-buf-dwim-extra-prefix-arguments nil
-  "Indicates if `multi-buf-dwim' should use extra prefix arguments.
-
-This allows the use of the minus sign prefix argument to switch
-to any buffer with the same backend and a negative universal
-prefix argument to switch to a buffer for any backend. When nil,
-extra prefix arguments are not needed because `multi-buf-dwim'
-shows buffers grouped by their backend and category. Buffers with
-the same backend and category are shown first.
-
-The main reason to set this to t is that some completion
-frameworks such as `helm' and `ivy' do not support the necessary
-completion metadata keys.
-
-The multi-buf.el file needs to be reloaded to update the
-docstrings if this value is changed.")
-
 (defun multi-buf-create (backend)
   "Create a new buffer for BACKEND.
 
@@ -360,6 +343,23 @@ come first in the completion."
                                    (memq (or (cdr-safe b) b) bufs))))))
         ;; Use the backend of the target buffer.
         (multi-buf-pop-to nil buf 'switch)))))
+
+(defvar multi-buf-dwim-extra-prefix-arguments nil
+  "Indicates if `multi-buf-dwim' should use extra prefix arguments.
+
+This allows the use of the minus sign prefix argument to switch
+to any buffer with the same backend and a negative universal
+prefix argument to switch to a buffer for any backend. When nil,
+extra prefix arguments are not needed because `multi-buf-dwim'
+shows buffers grouped by their backend and category. Buffers with
+the same backend and category are shown first.
+
+The main reason to set this to t is that some completion
+frameworks such as `helm' and `ivy' do not support the necessary
+completion metadata keys.
+
+The multi-buf.el file needs to be reloaded to update the
+docstrings if this value is changed.")
 
 (cl-defun multi-buf-dwim-docstring
     (&key
