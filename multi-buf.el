@@ -303,15 +303,17 @@ those with other categories."
                            (multi-buf-category backend (current-buffer))
                          (gensym)))
         (sort-backend (or backend (gensym))))
-    (cl-labels ((group-fun (candidate transform)
+    (cl-labels ((annotation-fun (candidate)
+                  (with-current-buffer candidate
+                    (let* ((backend2 multi-buf-backend-instance)
+                           (category (multi-buf-category backend2 (current-buffer))))
+                      (format "%s (%s)"
+                              (oref backend2 name)
+                              (multi-buf-category-name backend2 (current-buffer) category)))))
+                (group-fun (candidate transform)
                   (if transform
                       candidate
-                    (with-current-buffer candidate
-                      (let* ((backend2 multi-buf-backend-instance)
-                             (category (multi-buf-category backend2 (current-buffer))))
-                        (format "%s (%s)"
-                                (oref backend2 name)
-                                (multi-buf-category-name backend2 (current-buffer) category))))))
+                    (annotation-fun candidate)))
                 (sort-fun (collection)
                   (sort collection
                         :key (lambda (buffer-name)
@@ -322,28 +324,21 @@ those with other categories."
                         ;; consider the current backend and category to come
                         ;; before all other backends and categories.
                         :lessp (plambda (`(,backend1 ,category1) `(,backend2 ,category2))
-                                 (cond
-                                  ((and (eq backend1 sort-backend)
-                                        (not (eq backend2 sort-backend)))
-                                   t)
-                                  ((and (not (eq backend1 sort-backend))
-                                        (eq backend2 sort-backend))
-                                   nil)
-                                  ((and (eq backend1 backend2)
-                                        (equal category1 sort-category)
-                                        (not (equal category2 sort-category)))
-                                   t)
-                                  ((and (eq backend1 backend2)
-                                        (not (equal category1 sort-category))
-                                        (equal category2 sort-category))
-                                   nil)
-                                  ;; If the current backend and category aren't
-                                  ;; involved, fallback to `value<'.
-                                  (t
-                                   (value< (list (oref backend1 name)
-                                                 (format "%s" category1))
-                                           (list (oref backend2 name)
-                                                 (format "%s" category2))))))))
+                                 (cl-labels ((index (x)
+                                               (if x 0 1))
+                                             (get-key (b c)
+                                               (list (eq b sort-backend)
+                                                     (equal c sort-category)) ))
+                                   (let ((key1 (get-key backend1 category1))
+                                         (key2 (get-key backend2 category2)))
+                                     (if (cl-some #'identity (append key1 key2))
+                                         (value< key1 key2)
+                                       ;; If the current backend and category aren't
+                                       ;; involved, fallback to `value<'.
+                                       (value< (list (oref backend1 name)
+                                                     (format "%s" category1))
+                                               (list (oref backend2 name)
+                                                     (format "%s" category2)))))))))
                 (table-with-metadata (collection)
                   (lambda (string predicate action)
                     (if (eq action 'metadata)
@@ -351,7 +346,8 @@ those with other categories."
 
                           `(metadata ,@(map-merge 'alist
                                                   metadata
-                                                  `((group-function . ,#'group-fun)
+                                                  `((annotation-function . ,#'annotation-fun)
+                                                    (group-function . ,#'group-fun)
                                                     (display-sort-function . ,#'sort-fun)
                                                     (cycle-sort-function . ,#'sort-fun)))))
                       (complete-with-action action collection string predicate)))))
