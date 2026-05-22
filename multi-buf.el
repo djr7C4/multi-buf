@@ -312,8 +312,9 @@ come first in the completion."
                                  (cl-labels ((index (x)
                                                (if x 0 1))
                                              (get-key (b c)
-                                               (list (eq b sort-backend)
-                                                     (equal c sort-category)) ))
+                                               (mapcar #'index
+                                                       (list (eq b sort-backend)
+                                                             (equal c sort-category)))))
                                    (let ((key1 (get-key backend1 category1))
                                          (key2 (get-key backend2 category2)))
                                      (if (cl-some #'identity (append key1 key2))
