@@ -264,17 +264,17 @@ switch to any buffer for any backend."
                                           (and (consp current-prefix-arg)
                                                (not (equal current-prefix-arg '(16)))))
                        :all (equal current-prefix-arg '(16)))))
-  (let* ((bufs (if (or all (not backend))
-                   (multi-buf-all)
-                 (multi-buf-filter backend use-category)))
-         (buf (read-buffer (format "Choose %sbuffer: "
-                                   (if backend
-                                       (format "a %s " (oref backend name))
-                                     "any "))
-                           nil
-                           t
-                           (lambda (b)
-                             (memq (or (cdr-safe b) b) bufs)))))
+  (when-let* ((bufs (if (or all (not backend))
+                        (multi-buf-all)
+                      (multi-buf-filter backend use-category)))
+              (buf (read-buffer (format "Choose %sbuffer: "
+                                        (if backend
+                                            (format "a %s " (oref backend name))
+                                          "any "))
+                                nil
+                                t
+                                (lambda (b)
+                                  (memq (or (cdr-safe b) b) bufs)))))
     ;; Use the backend of the target buffer.
     (multi-buf-pop-to nil buf 'switch)))
 
@@ -337,15 +337,15 @@ come first in the completion."
                                                     (display-sort-function . ,#'sort-fun)
                                                     (cycle-sort-function . ,#'sort-fun)))))
                       (complete-with-action action collection string predicate)))))
-      (let* ((bufs (multi-buf-all))
-             (buf (minibuffer-with-setup-hook
-                      (lambda ()
-                        (setq-local minibuffer-completion-table (table-with-metadata minibuffer-completion-table)))
-                    (read-buffer "Choose a buffer: "
-                                 nil
-                                 t
-                                 (lambda (b)
-                                   (memq (or (cdr-safe b) b) bufs))))))
+      (when-let* ((bufs (multi-buf-all))
+                  (buf (minibuffer-with-setup-hook
+                           (lambda ()
+                             (setq-local minibuffer-completion-table (table-with-metadata minibuffer-completion-table)))
+                         (read-buffer "Choose a buffer: "
+                                      nil
+                                      t
+                                      (lambda (b)
+                                        (memq (or (cdr-safe b) b) bufs))))))
         ;; Use the backend of the target buffer.
         (multi-buf-pop-to nil buf 'switch)))))
 
@@ -380,7 +380,8 @@ cycling according to its numeric value. If no %2$s exists other
 than the current buffer, create a new one.
 
 With a universal prefix argument, always create a new %2$s. With
-two universal prefix arguments, switch to %4$s%5$s\""
+two universal prefix arguments, switch to %4$s%5$s If no buffers
+exist when attempting to switch, create a new one.\""
                            command-phrase
                            buffer-name
                            (if multi-buf-dwim-extra-prefix-arguments
@@ -398,15 +399,29 @@ any backend."
 always create a new %s if the region is active."
                                        buffer-name)
                              ""))))
-    (with-temp-buffer
+    (with-current-buffer (get-buffer-create "temp-buf");; with-temp-buffer
+      (erase-buffer);;;
+      (emacs-lisp-mode)
+      (insert "(defun dummy-fun ()\n  ")
       (insert docstring)
+      (insert "\n)")
       (goto-char (point-min))
-      (forward-line 2)
-      (fill-paragraph)
+      (forward-line 3)
+      (let ((pt (point)))
+        (while (progn
+                 (fill-paragraph)
+                 (forward-paragraph)
+                 (< pt (point)))
+          (setq pt (point))))
+      ;; Delete the defun.
+      (goto-char (point-min))
+      (delete-line)
+      (goto-char (- (point-max) 2))
+      (delete-char 2)
       ;; Remove quotes from the docstring. These were included initially so that
       ;; `fill-paragraph' would work correctly.
       (goto-char (point-min))
-      (delete-char 1)
+      (delete-char 3)
       (goto-char (1- (point-max)))
       (delete-char 1)
       (substring-no-properties (buffer-string)))))
@@ -415,42 +430,43 @@ always create a new %s if the region is active."
   (:documentation (multi-buf-dwim-docstring :command-phrase "BACKEND buffer"
                                             :buffer-name "BACKEND buffer"
                                             :region-force-new t))
-  (cond
-   ((or (null arg)
-        ;; Treat '- as a numeric argument when extra prefix arguments are not
-        ;; being used.
-        (and (not multi-buf-dwim-extra-prefix-arguments) (eq arg '-))
-        (integerp arg))
-    (or (and (not (and region-force-new
+  (or (cond
+       ((or (null arg)
+            ;; Treat '- as a numeric argument when extra prefix arguments are not
+            ;; being used.
+            (and (not multi-buf-dwim-extra-prefix-arguments) (eq arg '-))
+            (integerp arg))
+        ;; If there is no buffer to switch to other than the current one, return
+        ;; nil so that we fall back to creating a new buffer.
+        (and (not (and region-force-new
                        (use-region-p)))
-             (multi-buf-next backend :offset (prefix-numeric-value arg)))
-        ;; If there is no buffer to switch to other than the current one, create
-        ;; a new buffer.
-        (multi-buf-pop-to backend (multi-buf-new backend) 'new)))
-   ((equal arg '(16))
-    (if multi-buf-dwim-extra-prefix-arguments
-        (progn
-          ;; Set `this-command' so that `embark' won't try to run
-          ;; `multi-buf-dwim' again (which could cause buffer creation or
-          ;; cycling).
+             (multi-buf-next backend :offset (prefix-numeric-value arg))))
+       ((equal arg '(16))
+        (if multi-buf-dwim-extra-prefix-arguments
+            (progn
+              ;; Set `this-command' so that `embark' won't try to run
+              ;; `multi-buf-dwim' again (which could cause buffer creation or
+              ;; cycling).
+              (setq this-command 'multi-buf-switch)
+              (multi-buf-switch backend))
+          (setq this-command 'multi-buf-switch-group)
+          (multi-buf-switch-group backend)))
+       ;; When `multi-buf-dwim-extra-prefix-arguments' is nil, the rest of the
+       ;; prefix arguments are not needed except for the default. Completion
+       ;; groups should be used instead of filtering using prefix arguments.
+       ((and multi-buf-dwim-extra-prefix-arguments (equal arg '-))
+        (let ((use-category (multi-buf-use-category-default backend 'switch)))
           (setq this-command 'multi-buf-switch)
-          (multi-buf-switch backend))
-      (setq this-command 'multi-buf-switch-group)
-      (multi-buf-switch-group backend)))
-   ;; When `multi-buf-dwim-extra-prefix-arguments' is nil, the rest of the prefix
-   ;; arguments are not needed except for the default. Completion groups should
-   ;; be used instead of filtering using prefix arguments.
-   ((and multi-buf-dwim-extra-prefix-arguments (equal arg '-))
-    (let ((use-category (multi-buf-use-category-default backend 'switch)))
-      (setq this-command 'multi-buf-switch)
-      (multi-buf-switch backend :use-category (not use-category))))
-   ((and multi-buf-dwim-extra-prefix-arguments
-         (consp arg)
-         (< (prefix-numeric-value arg) 0))
-    (setq this-command 'multi-buf-switch)
-    (multi-buf-switch nil))
-   (t
-    (multi-buf-pop-to backend (multi-buf-new backend) 'new))))
+          (multi-buf-switch backend :use-category (not use-category))))
+       ((and multi-buf-dwim-extra-prefix-arguments
+             (consp arg)
+             (< (prefix-numeric-value arg) 0))
+        (setq this-command 'multi-buf-switch)
+        (multi-buf-switch nil)))
+      ;; Create a new buffer if `multi-buf-next', `multi-buf-switch' or
+      ;; `multi-buf-switch-group' returned nil to indicate that there was not
+      ;; buffer to switch to.
+      (multi-buf-pop-to backend (multi-buf-new backend) 'new)))
 
 (cl-defmacro multi-buf-define-backend
     (name
