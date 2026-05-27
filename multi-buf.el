@@ -399,8 +399,8 @@ any backend."
 always create a new %s if the region is active."
                                        buffer-name)
                              ""))))
-    (with-current-buffer (get-buffer-create "temp-buf");; with-temp-buffer
-      (erase-buffer);;;
+    (with-temp-buffer
+      (erase-buffer)
       (emacs-lisp-mode)
       (insert "(defun dummy-fun ()\n  ")
       (insert docstring)
