@@ -527,9 +527,6 @@ always create a new %s if the region is active."
 (multi-buf-define-backend "vterm"
   :new-form (multi-buf-with-displayed-buffer (vterm '-)))
 
-(multi-buf-define-backend "vterm"
-  :new-form (multi-buf-with-displayed-buffer (vterm '-)))
-
 (multi-buf-define-backend "chatgpt-shell"
   :new-form (multi-buf-with-displayed-buffer (chatgpt-shell t)))
 
