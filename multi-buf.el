@@ -19,8 +19,13 @@
 
 ;;; Utilities
 (defun multi-buf-project-root ()
-  (file-truename (or (and-let* ((proj (project-current))) (project-root proj))
-                     default-directory)))
+  (let ((root (or (and-let* ((proj (project-current))) (project-root proj))
+                  default-directory)))
+    ;; Without this check, tramp may prompt the user when multi-buf functions
+    ;; such as `multi-buf-category' are called. This can get quite annoying.
+    (if (file-remote-p root)
+        root
+      (file-truename root))))
 
 (defmacro multi-buf-with-displayed-buffer (&rest body)
   "Return the last buffer BODY attempted to display.
