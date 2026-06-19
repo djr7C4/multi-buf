@@ -74,12 +74,12 @@ switch to the new buffer. It should only create it."))
       ;; Add new buffers at the end to preserve the order.
       (oset backend buffers (append (oref backend buffers) (list buf)))
       (setq-local multi-buf-backend-instance backend)
-      (add-hook 'kill-buffer-hook #'multi-buf-cleanup-wrapper nil t))))
+      (add-hook 'kill-buffer-hook #'multi-buf-cleanup-wrapper nil t))
+    buf))
 
 (cl-defmethod multi-buf-new :around ((backend multi-buf-backend))
   (let ((buf (cl-call-next-method)))
-    (multi-buf-register backend buf)
-    buf))
+    (multi-buf-register backend buf)))
 
 (cl-defgeneric multi-buf-category (backend buf)
   (:documentation
@@ -480,6 +480,7 @@ always create a new %s if the region is active."
      (backend-instance (intern (format "multi-buf-%s-backend-instance" name)))
      (backend-parent-classes '(multi-buf-backend))
      new-form
+     register
      (command-phrase (format "`%s'" name))
      (buffer-name (format "%s buffer" name))
      region-force-new)
@@ -494,6 +495,13 @@ always create a new %s if the region is active."
            new-form
            `(cl-defmethod multi-buf-new ((_backend ,backend-class))
               ,new-form))
+     ,(and register
+           `(progn
+              (defun ,(intern (format "multi-buf-%s-register" name)) (buf)
+                (multi-buf-register ,backend-instance buf))
+              ,@(mapcar (lambda (fun)
+                          `(advice-add ',fun :filter-return #',(intern (format "multi-buf-%s-register" name))))
+                        (ensure-list register))))
      ,(and backend-instance
            `(defun ,(intern (format "multi-buf-new-%s" name)) ()
               ,(format "Create a new %s buffer." command-phrase)
@@ -509,11 +517,13 @@ always create a new %s if the region is active."
 
 ;;; Default backends
 (multi-buf-define-backend "eshell"
-  :new-form (multi-buf-with-displayed-buffer (eshell '-)))
+  :new-form (multi-buf-with-displayed-buffer (eshell '-))
+  :register eshell)
 
 (multi-buf-define-backend "shell"
   :new-form (multi-buf-with-displayed-buffer
-              (shell (generate-new-buffer-name "*shell*"))))
+              (shell (generate-new-buffer-name "*shell*")))
+  :register shell)
 
 (multi-buf-define-backend "term"
   ;; `make-term' adds earmuffs to the name so we can't use
@@ -527,19 +537,26 @@ always create a new %s if the region is active."
                          ;; Copied from `term'.
                          (or explicit-shell-file-name
                              (getenv "ESHELL")
-                             shell-file-name))))
+                             shell-file-name)))
+  :register make-term)
 
 (multi-buf-define-backend "vterm"
-  :new-form (multi-buf-with-displayed-buffer (vterm '-)))
+  :new-form (multi-buf-with-displayed-buffer (vterm '-))
+  :register (vterm vterm-other-window))
 
 (multi-buf-define-backend "chatgpt-shell"
-  :new-form (multi-buf-with-displayed-buffer (chatgpt-shell t)))
+  :new-form (multi-buf-with-displayed-buffer (chatgpt-shell t))
+  :register chatgpt-shell)
 
 (multi-buf-define-backend "agent-shell"
   ;; `multi-buf-with-displayed-buffer' doesn't work with `agent-shell'.
   :new-form (prog1
                 (agent-shell '(4))
-              (bury-buffer)))
+              (bury-buffer))
+  ;; TODO: `agent-shell' doesn't return the buffer name so a more sophisticated
+  ;; way of registering the buffer would be required.
+  ;; :register agent-shell
+  )
 
 (multi-buf-define-backend "gptel"
   :new-form (let ((name (generate-new-buffer-name "*gptel*")))
@@ -551,6 +568,7 @@ always create a new %s if the region is active."
                        (and (use-region-p)
                             (buffer-substring (region-beginning) (region-end)))
                        t)))
+  :register gptel
   ;; When a region is selected, always create a new gptel with the selected
   ;; region as the initial prompt.
   :region-force-new t)
@@ -558,6 +576,8 @@ always create a new %s if the region is active."
 (multi-buf-define-backend "gptel-agent"
   :new-form (multi-buf-with-displayed-buffer
               (gptel-agent (multi-buf-project-root)))
+  ;; We don't need to register `gptel-agent' because it uses `gptel' internally.
+  ;; It also doesn't return the buffer name so it wouldn't work either.
   :region-force-new t)
 
 ;;; Indirect buffers
@@ -605,6 +625,12 @@ always create a new %s if the region is active."
            (not (multi-buf-match-p backend (current-buffer))))
       (user-error "Cannot create an indirect buffer for a buffer with another backend")
     (cl-call-next-method)))
+
+;; Register all indirect buffers.
+(defun multi-buf-indirect-register (buf)
+  (multi-buf-register multi-buf-indirect-backend-instance buf))
+
+(advice-add 'make-indirect-buffer :filter-return #'multi-buf-indirect-register)
 
 (cl-defmethod multi-buf-category ((_backend multi-buf-indirect-backend) buf)
   ;; Indirect buffers belong to their base buffer. Base buffers belong to
