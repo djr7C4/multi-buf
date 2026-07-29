@@ -1,0 +1,52 @@
+* Why?
+Shell and terminal modes such as =shell=, =eshell=, =term= and =vterm= provide
+commands for creating new buffers. Often, if the buffer already exists, the
+command will switch to it instead of creating a new buffer. This is convenient
+but different commands often do not have consistent conventions.
+
+For example, =M-x shell= creates a new shell if none exists and otherwise
+switches to it. With a prefix argument, it prompts the user for the buffer to
+switch to. =M-x vterm= does the same by default but can be configured to use a
+different buffer for each directory and handles prefix arguments differently.
+Additionally, different commands display the new buffers in inconsistent ways
+such as using the same window instead of the other window.
+
+* The multi-buf approach
+=multi-buf= generalizes and replaces packages such as [[https://github.com/manateelazycat/multi-term][multi-term]] and [[https://github.com/suonlight/multi-vterm][multi-vterm]]
+that provide commands for creating multiple terminal buffers and switching
+between them while providing consistent keybindings and display logic for each.
+Additionally, =multi-buf= also supports creating and switching between indirect
+buffers. There is a single =multi-buf= DWIM command for each type of buffer that
+handles creating and switching to buffers of that type.
+
+For example, =M-x multi-buf-vterm-dwim= without a prefix argument creates a new
+=vterm= buffer if none exists. Otherwise, it cycles to the next =vterm= buffer
+for the current project. With a universal prefix argument, a new buffer is
+always created.
+
+With two universal prefix arguments, the user can switch to any =multi-buf=
+managed buffer using completion. Buffers are grouped into sections based on
+their mode and the project they belong to and buffers for the same project and
+mode are shown first for convenience.
+
+This feature works best with completion frameworks such as =vertico= that
+support =group-function= completion metadata as otherwise buffers will not be
+grouped into sections. For others such as =helm=, an alternative is to set
+=multi-buf-dwim-extra-prefix-arguments= to =t= and reload =multi-buf= to update
+the docstrings. This provides additional prefix arguments for commands such as
+=multi-buf-vterm-dwim= but is more complicated.
+
+* Configuration
+Bind the =multi-buf= DWIM commands such as =multi-buf-vterm-dwim= to the keys
+that you would normally bind the basic command such as =vterm= to. Currently,
+=eshell=, =shell=, =term=, =vterm=, =chatgpt-shell=, =agent-shell=, =gptel=,
+=gptel-agent= and indirect buffers are supported.
+
+* Defining new backends
+=multi-buf= is designed to make it simple to define DWIM commands for new types
+of buffers. Usually, it requires just a few lines of code using the
+=multi-buf-define-backend= macro. See =multi-buf.el= for examples.
+
+A rich set of CLOS methods are provided for defining and customizing backends.
+In more complex or unusual cases (e.g. indirect buffers), it may be necessary to
+provide an implementation by directly specializing these methods instead.
