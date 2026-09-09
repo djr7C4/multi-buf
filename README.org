@@ -1,8 +1,9 @@
 * Why?
 Shell and terminal modes such as =shell=, =eshell=, =term= and =vterm= provide
-commands for creating new buffers. Often, if the buffer already exists, the
+commands for creating new buffers. If the buffer already exists, many commands
 command will switch to it instead of creating a new buffer. This is convenient
-but different commands often do not have consistent conventions.
+but different commands often do not have consistent conventions which increases
+the mental burden on the user.
 
 For example, =M-x shell= creates a new shell if none exists and otherwise
 switches to it. With a prefix argument, it prompts the user for the buffer to

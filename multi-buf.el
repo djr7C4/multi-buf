@@ -1,4 +1,4 @@
-;;; multi-buf.el --- Buffer multiplexer -*- lexical-binding: t; -*-
+;; multi-buf.el --- Buffer multiplexer -*- lexical-binding: t; -*-
 ;; Copyright (C) 2026 David J. Rosenbaum <djr7c4@gmail.com>
 
 ;; Author: David J. Rosenbaum <djr7c4@gmail.com>
@@ -8,9 +8,27 @@
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "29.1"))
 
-;;; Commentary:
+;; Copyright (C) 2026 David J. Rosenbaum <djr7c4@gmail.com>
+;;
+;; This program is free software: you can redistribute it and/or modify
+;; it under the terms of version 3 of the GNU General Public License, as
+;; published by the Free Software Foundation.
+;;
+;; This program is distributed in the hope that it will be useful, but
+;; WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+;; General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;; TODO
+;;; Commentary:
+;; multi-buf generalizes and replaces packages such as multi-term and
+;; multi-vterm that provide commands for creating multiple terminal buffers and
+;; switching between them while providing consistent keybindings and display
+;; logic for each. Additionally, multi-buf also supports creating and switching
+;; between indirect buffers. There is a single multi-buf DWIM command for each
+;; type of buffer that handles creating and switching to buffers of that type.
 
 ;;; Code:
 (require 'cl-lib)
