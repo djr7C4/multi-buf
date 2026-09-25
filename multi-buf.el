@@ -562,6 +562,10 @@ always create a new %s if the region is active."
   :new-form (multi-buf-with-displayed-buffer (vterm '-))
   :register (vterm vterm-other-window))
 
+(multi-buf-define-backend "ghostel"
+  :new-form (multi-buf-with-displayed-buffer (ghostel '-))
+  :register ghostel)
+
 (multi-buf-define-backend "chatgpt-shell"
   :new-form (multi-buf-with-displayed-buffer (chatgpt-shell t))
   :register chatgpt-shell)
@@ -678,7 +682,7 @@ always create a new %s if the region is active."
 
 ;; Local Variables:
 ;; read-symbol-shorthands: (
-;;   ("dflet" . "noflet")
+;;   ("dflet" . "rem-dflet")
 ;;   ("plet" . "pcase-let")
 ;;   ("plet*" . "pcase-let*")
 ;;   ("psetq*" . "pcase-setq")
