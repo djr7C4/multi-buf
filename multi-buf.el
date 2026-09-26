@@ -515,10 +515,25 @@ always create a new %s if the region is active."
               ,new-form))
      ,(and register
            `(progn
-              (defun ,(intern (format "multi-buf-%s-register" name)) (buf)
-                (multi-buf-register ,backend-instance buf))
-              ,@(mapcar (lambda (fun)
-                          `(advice-add ',fun :filter-return #',(intern (format "multi-buf-%s-register" name))))
+              ,@(mapcar (lambda (obj)
+                          (let (advice-fun
+                                term-fun
+                                buffer-getter)
+                            (if (symbolp obj)
+                                (setq term-fun obj
+                                      buffer-getter (lambda (buf &rest _) buf))
+                              (setq term-fun (car obj)
+                                    buffer-getter (cadr obj)))
+                            (setq advice-fun (intern (format "multi-buf-%s-register" term-fun)))
+                            `(progn
+                               (defun ,advice-fun (orig-fun &rest args)
+                                 (let ((result (apply orig-fun args)))
+                                   (multi-buf-register ,backend-instance
+                                                       (apply ,buffer-getter
+                                                              result
+                                                              args))))
+                               (advice-add ',term-fun
+                                           :around #',advice-fun))))
                         (ensure-list register))))
      ,(and backend-instance
            `(defun ,(intern (format "multi-buf-new-%s" name)) ()
@@ -563,8 +578,8 @@ always create a new %s if the region is active."
   :register (vterm vterm-other-window))
 
 (multi-buf-define-backend "ghostel"
-  :new-form (multi-buf-with-displayed-buffer (ghostel '-))
-  :register ghostel)
+  :new-form (multi-buf-with-displayed-buffer (ghostel t))
+  :register (ghostel (ghostel-exec (lambda (_result buf &rest _) buf))))
 
 (multi-buf-define-backend "chatgpt-shell"
   :new-form (multi-buf-with-displayed-buffer (chatgpt-shell t))
