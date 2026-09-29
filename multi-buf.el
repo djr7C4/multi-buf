@@ -579,7 +579,7 @@ always create a new %s if the region is active."
 
 (multi-buf-define-backend "ghostel"
   :new-form (multi-buf-with-displayed-buffer (ghostel t))
-  :register (ghostel (ghostel-exec (lambda (_result buf &rest _) buf))))
+  :register (ghostel ghostel-create (ghostel-exec (lambda (_result buf &rest _) buf))))
 
 (multi-buf-define-backend "chatgpt-shell"
   :new-form (multi-buf-with-displayed-buffer (chatgpt-shell t))
