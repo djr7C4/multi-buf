@@ -1,9 +1,9 @@
 * Why?
-Shell and terminal modes such as =shell=, =eshell=, =term= and =vterm= provide
-commands for creating new buffers. If the buffer already exists, many commands
-command will switch to it instead of creating a new buffer. This is convenient
-but different commands often do not have consistent conventions which increases
-the mental burden on the user.
+Shell and terminal modes such as =shell=, =eshell=, =term=, =vterm= and
+=ghostel= provide commands for creating new buffers. If the buffer already
+exists, many commands command will switch to it instead of creating a new
+buffer. This is convenient but different commands often do not have consistent
+conventions which increases the mental burden on the user.
 
 For example, =M-x shell= creates a new shell if none exists and otherwise
 switches to it. With a prefix argument, it prompts the user for the buffer to
@@ -20,10 +20,10 @@ Additionally, =multi-buf= also supports creating and switching between indirect
 buffers. There is a single =multi-buf= DWIM command for each type of buffer that
 handles creating and switching to buffers of that type.
 
-For example, =M-x multi-buf-vterm-dwim= without a prefix argument creates a new
-=vterm= buffer if none exists. Otherwise, it cycles to the next =vterm= buffer
-for the current project. With a universal prefix argument, a new buffer is
-always created.
+For example, =M-x multi-buf-ghostel-dwim= without a prefix argument creates a
+new =ghostel= buffer if none exists. Otherwise, it cycles to the next =ghostel=
+buffer for the current project. With a universal prefix argument, a new buffer
+is always created.
 
 With two universal prefix arguments, the user can switch to any =multi-buf=
 managed buffer using completion. Buffers are grouped into sections based on
@@ -35,13 +35,13 @@ support =group-function= completion metadata as otherwise buffers will not be
 grouped into sections. For others such as =helm=, an alternative is to set
 =multi-buf-dwim-extra-prefix-arguments= to =t= and reload =multi-buf= to update
 the docstrings. This provides additional prefix arguments for commands such as
-=multi-buf-vterm-dwim= but is more complicated.
+=multi-buf-ghostel-dwim= but is more complicated.
 
 * Configuration
 Bind the =multi-buf= DWIM commands such as =multi-buf-vterm-dwim= to the keys
 that you would normally bind the basic command such as =vterm= to. Currently,
-=eshell=, =shell=, =term=, =vterm=, =chatgpt-shell=, =agent-shell=, =gptel=,
-=gptel-agent= and indirect buffers are supported.
+=eshell=, =shell=, =term=, =vterm=, =ghostel=, =chatgpt-shell=, =agent-shell=,
+=gptel=, =gptel-agent= and indirect buffers are supported.
 
 * Defining new backends
 =multi-buf= is designed to make it simple to define DWIM commands for new types
