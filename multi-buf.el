@@ -371,8 +371,9 @@ come first in the completion."
         ;; Use the backend of the target buffer.
         (multi-buf-pop-to nil buf 'switch)))))
 
-(defvar multi-buf-dwim-extra-prefix-arguments nil
-  "Indicates if `multi-buf-dwim' should use extra prefix arguments.
+(eval-and-compile
+  (defvar multi-buf-dwim-extra-prefix-arguments nil
+    "Indicates if `multi-buf-dwim' should use extra prefix arguments.
 
 This allows the use of the minus sign prefix argument to switch
 to any buffer with the same backend and a negative universal
@@ -388,13 +389,13 @@ completion metadata keys.
 The multi-buf.el file needs to be reloaded to update the
 docstrings if this value is changed.")
 
-(cl-defun multi-buf-dwim-docstring
-    (&key
-     name
-     (command-phrase (format "`%s'" name))
-     (buffer-name (format "%s buffer" name))
-     region-force-new)
-  (let ((docstring (format "\"Cycle to, switch to or create a new %1$s.
+  (cl-defun multi-buf-dwim-docstring
+      (&key
+       name
+       (command-phrase (format "`%s'" name))
+       (buffer-name (format "%s buffer" name))
+       region-force-new)
+    (let ((docstring (format "\"Cycle to, switch to or create a new %1$s.
 
 If no prefix argument ARG is provided then cycle forward to the
 next %2$s. If the prefix argument is an integer%3$s, then perform
@@ -404,49 +405,49 @@ than the current buffer, create a new one.
 With a universal prefix argument, always create a new %2$s. With
 two universal prefix arguments, switch to %4$s%5$s If no buffers
 exist when attempting to switch, create a new one.\""
-                           command-phrase
-                           buffer-name
-                           (if multi-buf-dwim-extra-prefix-arguments
-                               ""
-                             " or a minus sign")
-                           (if multi-buf-dwim-extra-prefix-arguments
-                               (format "a %1$s in the same project using
+                             command-phrase
+                             buffer-name
+                             (if multi-buf-dwim-extra-prefix-arguments
+                                 ""
+                               " or a minus sign")
+                             (if multi-buf-dwim-extra-prefix-arguments
+                                 (format "a %1$s in the same project using
 completion. With a minus sign as the prefix argument, switch to any %1$s using
 completion. With a negative universal prefix argument, switch to a buffer for
 any backend."
-                                       buffer-name)
-                             (format "any %s using completion." buffer-name))
-                           (if region-force-new
-                               (format "\n\nWhen REGION-FORCE-NEW is non-nil,
+                                         buffer-name)
+                               (format "any %s using completion." buffer-name))
+                             (if region-force-new
+                                 (format "\n\nWhen REGION-FORCE-NEW is non-nil,
 always create a new %s if the region is active."
-                                       buffer-name)
-                             ""))))
-    (with-temp-buffer
-      (erase-buffer)
-      (emacs-lisp-mode)
-      (insert "(defun dummy-fun ()\n  ")
-      (insert docstring)
-      (insert "\n)")
-      (goto-char (point-min))
-      (forward-line 3)
-      (let ((pt (point)))
-        (while (progn
-                 (fill-paragraph)
-                 (forward-paragraph)
-                 (< pt (point)))
-          (setq pt (point))))
-      ;; Delete the defun.
-      (goto-char (point-min))
-      (delete-line)
-      (goto-char (- (point-max) 2))
-      (delete-char 2)
-      ;; Remove quotes from the docstring. These were included initially so that
-      ;; `fill-paragraph' would work correctly.
-      (goto-char (point-min))
-      (delete-char 3)
-      (goto-char (1- (point-max)))
-      (delete-char 1)
-      (substring-no-properties (buffer-string)))))
+                                         buffer-name)
+                               ""))))
+      (with-temp-buffer
+        (erase-buffer)
+        (emacs-lisp-mode)
+        (insert "(defun dummy-fun ()\n  ")
+        (insert docstring)
+        (insert "\n)")
+        (goto-char (point-min))
+        (forward-line 3)
+        (let ((pt (point)))
+          (while (progn
+                   (fill-paragraph)
+                   (forward-paragraph)
+                   (< pt (point)))
+            (setq pt (point))))
+        ;; Delete the defun.
+        (goto-char (point-min))
+        (delete-line)
+        (goto-char (- (point-max) 2))
+        (delete-char 2)
+        ;; Remove quotes from the docstring. These were included initially so that
+        ;; `fill-paragraph' would work correctly.
+        (goto-char (point-min))
+        (delete-char 3)
+        (goto-char (1- (point-max)))
+        (delete-char 1)
+        (substring-no-properties (buffer-string))))))
 
 (cl-defun multi-buf-dwim (backend arg &key region-force-new)
   (:documentation (multi-buf-dwim-docstring :command-phrase "BACKEND buffer"
@@ -622,8 +623,9 @@ always create a new %s if the region is active."
   :new-form (let ((multi-buf-gptel-backend-instance multi-buf-gptel-agent-backend-instance))
               (multi-buf-with-displayed-buffer
                 (gptel-agent (multi-buf-project-root))))
-  ;; We don't need to register `gptel-agent' because it uses `gptel' internally.
-  ;; It also doesn't return the buffer name so it wouldn't work either.
+  ;; Since `gptel-agent' doesn't return the buffer, we have to capture the
+  ;; return value of `gptel' inside calls to `gptel-agent'.
+  :register ((gptel-agent :capture-fun gptel))
   :region-force-new t)
 
 ;;; Indirect buffers
