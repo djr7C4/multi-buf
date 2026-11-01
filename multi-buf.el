@@ -610,9 +610,9 @@ always create a new %s if the region is active."
   :region-force-new t)
 
 (multi-buf-define-backend "gptel-agent"
-  ;; Since `gptel-agent' calls `gptel', we need to bind
-  ;; `multi-buf-gptel-backend-instance' to stop the inner `gptel' call from
-  ;; clobbering it.
+  ;; Since `gptel-agent' calls `gptel' (which is also a registered backend), we
+  ;; need to bind `multi-buf-gptel-backend-instance' to stop the inner `gptel'
+  ;; call from clobbering it.
   :new-form (let ((multi-buf-gptel-backend-instance multi-buf-gptel-agent-backend-instance))
               (multi-buf-with-displayed-buffer
                 (gptel-agent (multi-buf-project-root))))
