@@ -33,6 +33,7 @@
 ;;; Code:
 (require 'cl-lib)
 (require 'eieio)
+(require 'map)
 (require 'project)
 
 ;;; Utilities
@@ -573,28 +574,40 @@ always create a new %s if the region is active."
               (while (get-buffer (format "*%s*" name))
                 (setq name (format "%s<%d>" base-name (cl-incf suffix))))
               (make-term name
-                         ;; Copied from `term'.
-                         (or explicit-shell-file-name
+                         ;; Adapted from `term'.
+                         (or (bound-and-true-p explicit-shell-file-name)
                              (getenv "ESHELL")
                              shell-file-name)))
   :register (make-term))
 
 (multi-buf-define-backend "vterm"
-  :new-form (multi-buf-with-displayed-buffer (vterm '-))
+  :new-form (multi-buf-with-displayed-buffer
+              (require 'vterm)
+              (declare-function vterm "vterm")
+              (vterm '-))
   :register (vterm vterm-other-window))
 
 (multi-buf-define-backend "ghostel"
-  :new-form (multi-buf-with-displayed-buffer (ghostel t))
+  :new-form (multi-buf-with-displayed-buffer
+              (require 'ghostel)
+              (declare-function ghostel "ghostel")
+              (ghostel t))
   :register (ghostel ghostel-create (ghostel-exec :buffer-getter (lambda (_result buf &rest _) buf))))
 
 (multi-buf-define-backend "chatgpt-shell"
-  :new-form (multi-buf-with-displayed-buffer (chatgpt-shell t))
+  :new-form (multi-buf-with-displayed-buffer
+              (require 'chatgpt-shell)
+              (declare-function chatgpt-shell "chatgpt-shell")
+              (chatgpt-shell t))
   :register (chatgpt-shell))
 
 (multi-buf-define-backend "agent-shell"
   ;; `multi-buf-with-displayed-buffer' doesn't work with `agent-shell'.
   :new-form (prog1
-                (agent-shell '(4))
+                (progn
+                  (require 'agent-shell)
+                  (declare-function agent-shell "agent-shell")
+                  (agent-shell '(4)))
               (bury-buffer))
   ;; TODO: `agent-shell' doesn't return the buffer name so a more sophisticated
   ;; way of registering the buffer would be required.
@@ -604,6 +617,8 @@ always create a new %s if the region is active."
 (multi-buf-define-backend "gptel"
   :new-form (let ((name (generate-new-buffer-name "*gptel*")))
               (multi-buf-with-displayed-buffer
+                (require 'gptel)
+                (declare-function gptel "gptel")
                 (gptel name
                        nil
                        ;; Support the `gptel' feature for inserting regions into
@@ -622,6 +637,8 @@ always create a new %s if the region is active."
   ;; call from clobbering it.
   :new-form (let ((multi-buf-gptel-backend-instance multi-buf-gptel-agent-backend-instance))
               (multi-buf-with-displayed-buffer
+                (require 'gptel-agent)
+                (declare-function gptel-agent "gptel-agent")
                 (gptel-agent (multi-buf-project-root))))
   ;; Since `gptel-agent' doesn't return the buffer, we have to capture the
   ;; return value of `gptel' inside calls to `gptel-agent'.
@@ -687,7 +704,7 @@ always create a new %s if the region is active."
 
 ;; When the current buffer is a base buffer and we are cycling, display the
 ;; indirect buffer in the other window.
-(cl-defmethod multi-buf-display-buffer-action ((backend multi-buf-indirect-backend) buf action-type)
+(cl-defmethod multi-buf-display-buffer-action ((backend multi-buf-indirect-backend) _buf action-type)
   (unless (and (eq action-type 'cycle)
                (multi-buf-match-p backend (current-buffer))
                (not (buffer-base-buffer (current-buffer))))
