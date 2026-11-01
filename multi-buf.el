@@ -517,23 +517,29 @@ always create a new %s if the region is active."
               ,@(mapcar (lambda (obj)
                           (let (advice-fun
                                 term-fun
-                                buffer-getter)
-                            (if (symbolp obj)
-                                (setq term-fun obj
-                                      buffer-getter (lambda (buf &rest _) buf))
-                              (setq term-fun (car obj)
-                                    buffer-getter (cadr obj)))
+                                buffer-getter
+                                capture-fun
+                                (obj (ensure-list obj)))
+                            (setq term-fun (car obj)
+                                  buffer-getter (or (plist-get (cdr obj) :buffer-getter)
+                                                    (lambda (buf &rest _) buf))
+                                  capture-fun (plist-get (cdr obj) :capture-fun))
                             (setq advice-fun (intern (format "multi-buf-%s-register" term-fun)))
                             `(progn
                                (defun ,advice-fun (orig-fun &rest args)
-                                 (let ((result (apply orig-fun args)))
+                                 (let (result)
+                                   ,(if capture-fun
+                                        `(cl-letf* ((orig-fun2 (symbol-function ',capture-fun))
+                                                    ((symbol-function ',capture-fun)
+                                                     (lambda (&rest args2)
+                                                       (setq result (apply orig-fun2 args2)))))
+                                           (apply orig-fun args))
+                                      `(setq result (apply orig-fun args)))
                                    (multi-buf-register ,backend-instance
-                                                       (apply ,buffer-getter
-                                                              result
-                                                              args))))
+                                                       (apply ,buffer-getter result args))))
                                (advice-add ',term-fun
                                            :around #',advice-fun))))
-                        (ensure-list register))))
+                        register)))
      ,(and backend-instance
            `(defun ,(intern (format "multi-buf-new-%s" name)) ()
               ,(format "Create a new %s buffer." command-phrase)
@@ -550,12 +556,12 @@ always create a new %s if the region is active."
 ;;; Default backends
 (multi-buf-define-backend "eshell"
   :new-form (multi-buf-with-displayed-buffer (eshell '-))
-  :register eshell)
+  :register (eshell))
 
 (multi-buf-define-backend "shell"
   :new-form (multi-buf-with-displayed-buffer
               (shell (generate-new-buffer-name "*shell*")))
-  :register shell)
+  :register (shell))
 
 (multi-buf-define-backend "term"
   ;; `make-term' adds earmuffs to the name so we can't use
@@ -570,7 +576,7 @@ always create a new %s if the region is active."
                          (or explicit-shell-file-name
                              (getenv "ESHELL")
                              shell-file-name)))
-  :register make-term)
+  :register (make-term))
 
 (multi-buf-define-backend "vterm"
   :new-form (multi-buf-with-displayed-buffer (vterm '-))
@@ -578,11 +584,11 @@ always create a new %s if the region is active."
 
 (multi-buf-define-backend "ghostel"
   :new-form (multi-buf-with-displayed-buffer (ghostel t))
-  :register (ghostel ghostel-create (ghostel-exec (lambda (_result buf &rest _) buf))))
+  :register (ghostel ghostel-create (ghostel-exec :buffer-getter (lambda (_result buf &rest _) buf))))
 
 (multi-buf-define-backend "chatgpt-shell"
   :new-form (multi-buf-with-displayed-buffer (chatgpt-shell t))
-  :register chatgpt-shell)
+  :register (chatgpt-shell))
 
 (multi-buf-define-backend "agent-shell"
   ;; `multi-buf-with-displayed-buffer' doesn't work with `agent-shell'.
@@ -604,7 +610,7 @@ always create a new %s if the region is active."
                        (and (use-region-p)
                             (buffer-substring (region-beginning) (region-end)))
                        t)))
-  :register gptel
+  :register (gptel)
   ;; When a region is selected, always create a new gptel with the selected
   ;; region as the initial prompt.
   :region-force-new t)
