@@ -610,8 +610,12 @@ always create a new %s if the region is active."
   :region-force-new t)
 
 (multi-buf-define-backend "gptel-agent"
-  :new-form (multi-buf-with-displayed-buffer
-              (gptel-agent (multi-buf-project-root)))
+  ;; Since `gptel-agent' calls `gptel', we need to bind
+  ;; `multi-buf-gptel-backend-instance' to stop the inner `gptel' call from
+  ;; clobbering it.
+  :new-form (let ((multi-buf-gptel-backend-instance multi-buf-gptel-agent-backend-instance))
+              (multi-buf-with-displayed-buffer
+                (gptel-agent (multi-buf-project-root))))
   ;; We don't need to register `gptel-agent' because it uses `gptel' internally.
   ;; It also doesn't return the buffer name so it wouldn't work either.
   :region-force-new t)
